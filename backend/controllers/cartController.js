@@ -1,5 +1,6 @@
 const cartModel = require('../models/cartModel');
 const productModel = require('../models/productModel');
+const orderModel = require('../models/orderModel');
 
 const cartController = {
   // Get cart
@@ -8,12 +9,14 @@ const cartController = {
       const { cart, items } = await cartModel.getCartWithItems(req.user.id);
       
       const total = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+      const totalQuantity = items.reduce((sum, item) => sum + item.quantity, 0);
 
       res.json({
         success: true,
         cart,
         items,
-        total
+        total,
+        total_quantity: totalQuantity
       });
     } catch (error) {
       console.error('Get cart error:', error);
@@ -50,13 +53,15 @@ const cartController = {
       
       const { cart, items } = await cartModel.getCartWithItems(req.user.id);
       const total = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+      const totalQuantity = items.reduce((sum, item) => sum + item.quantity, 0);
 
       res.json({
         success: true,
         message: 'Item added to cart.',
         cart,
         items,
-        total
+        total,
+        total_quantity: totalQuantity
       });
     } catch (error) {
       console.error('Add to cart error:', error);
@@ -100,13 +105,15 @@ const cartController = {
       
       const { cart, items } = await cartModel.getCartWithItems(req.user.id);
       const total = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+      const totalQuantity = items.reduce((sum, item) => sum + item.quantity, 0);
 
       res.json({
         success: true,
         message: 'Cart updated.',
         cart,
         items,
-        total
+        total,
+        total_quantity: totalQuantity
       });
     } catch (error) {
       console.error('Update cart error:', error);
@@ -126,13 +133,15 @@ const cartController = {
       
       const { cart, items } = await cartModel.getCartWithItems(req.user.id);
       const total = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+      const totalQuantity = items.reduce((sum, item) => sum + item.quantity, 0);
 
       res.json({
         success: true,
         message: 'Item removed from cart.',
         cart,
         items,
-        total
+        total,
+        total_quantity: totalQuantity
       });
     } catch (error) {
       console.error('Remove from cart error:', error);
@@ -153,13 +162,54 @@ const cartController = {
         message: 'Cart cleared.',
         cart: { id: req.user.id },
         items: [],
-        total: 0
+        total: 0,
+        total_quantity: 0
       });
     } catch (error) {
       console.error('Clear cart error:', error);
       res.status(500).json({ 
         success: false, 
         message: 'Server error clearing cart.' 
+      });
+    }
+  },
+
+  // Get cart summary with shipping calculation
+  async getCartSummary(req, res) {
+    try {
+      const { city, delivery_method } = req.query;
+      
+      const { cart, items } = await cartModel.getCartWithItems(req.user.id);
+      const subtotal = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+      const totalQuantity = items.reduce((sum, item) => sum + item.quantity, 0);
+      
+      // Calculate shipping if city and delivery method are provided
+      let shippingCost = null;
+      let isLargeOrder = false;
+      
+      if (city && delivery_method) {
+        shippingCost = await orderModel.calculateShippingCost(city, delivery_method);
+        isLargeOrder = await orderModel.isLargeOrder(totalQuantity);
+      }
+      
+      const total = shippingCost !== null ? subtotal + shippingCost : subtotal;
+
+      res.json({
+        success: true,
+        cart,
+        items,
+        subtotal,
+        total_quantity: totalQuantity,
+        shipping_cost: shippingCost,
+        is_large_order: isLargeOrder,
+        total,
+        requires_location: !city || !delivery_method
+      });
+    } catch (error) {
+      console.error('Get cart summary error:', error);
+      res.status(500).json({ 
+        success: false, 
+        message: 'Server error fetching cart summary.' 
       });
     }
   }

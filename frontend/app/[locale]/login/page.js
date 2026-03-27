@@ -11,6 +11,8 @@ import { useAuthStore } from '../../../store/authStore';
 import { getDictionary } from '../../../i18n';
 import { cn } from '../../../lib/utils';
 import Navbar from '../../../components/Navbar';
+import Button from '../../../components/ui/Button';
+import { Input } from '../../../components/ui/Input';
 
 const loginSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -23,6 +25,7 @@ export default function LoginPage({ params: { locale = 'en' } }) {
   const dict = getDictionary(locale);
   const t = dict?.auth || {};
   const commonT = dict?.common || {};
+  const errorsT = dict?.errors || {};
   
   const { login, isLoading, error, isAuthenticated, clearError } = useAuthStore();
 
@@ -51,98 +54,101 @@ export default function LoginPage({ params: { locale = 'en' } }) {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="min-h-screen bg-dark-950">
       <Navbar locale={locale} dict={dict} />
       
       <div className="pt-24 pb-12 flex items-center justify-center min-h-screen">
         <div className="w-full max-w-md px-4">
-          <div className="card p-8">
-            <div className="text-center mb-8">
-              <h1 className="text-2xl font-bold mb-2">{t.loginTitle}</h1>
-              <p className="text-gray-600 dark:text-gray-400">{t.loginSubtitle}</p>
+          {/* Logo */}
+          <div className="text-center mb-8">
+            <div className="logo w-16 h-16 mx-auto mb-4">
+              <span className="logo-text text-3xl">S</span>
             </div>
+            <h1 className="text-3xl font-bold text-white">{t.loginTitle}</h1>
+            <p className="text-gray-400 mt-2">{t.loginSubtitle}</p>
+          </div>
 
+          <div className="card p-8 bg-dark-800 border-dark-600">
             {error && (
-              <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg text-sm">
+              <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 text-red-400 rounded-lg text-sm">
                 {error}
               </div>
             )}
 
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-1">{t.email}</label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                  <input
-                    type="email"
-                    {...register('email')}
-                    className="input pl-10"
-                    placeholder="you@example.com"
-                  />
-                </div>
-                {errors.email && (
-                  <p className="text-red-500 text-sm mt-1">{errors.email.message}</p>
-                )}
-              </div>
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+              <Input
+                label={t.email}
+                type="email"
+                placeholder="you@example.com"
+                icon={Mail}
+                error={errors.email?.message || errorsT.invalidEmail}
+                {...register('email')}
+              />
 
               <div>
-                <label className="block text-sm font-medium mb-1">{t.password}</label>
+                <label className="label text-gray-300">{t.password}</label>
                 <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">
+                    <Lock className="w-5 h-5" />
+                  </div>
                   <input
                     type={showPassword ? 'text' : 'password'}
                     {...register('password')}
-                    className="input pl-10 pr-10"
+                    className="input pl-10 pr-10 bg-dark-700 border-dark-600 text-white"
                     placeholder="••••••••"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300"
                   >
                     {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                   </button>
                 </div>
                 {errors.password && (
-                  <p className="text-red-500 text-sm mt-1">{errors.password.message}</p>
+                  <p className="text-red-500 text-sm mt-1.5">{errors.password.message}</p>
                 )}
               </div>
 
               <div className="flex items-center justify-between">
-                <label className="flex items-center">
-                  <input type="checkbox" className="rounded border-gray-300" />
-                  <span className="ml-2 text-sm text-gray-600 dark:text-gray-400">Remember me</span>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input 
+                    type="checkbox" 
+                    className="w-4 h-4 rounded border-dark-500 bg-dark-700 text-brand-red focus:ring-brand-red accent-brand-red" 
+                  />
+                  <span className="text-sm text-gray-400">Remember me</span>
                 </label>
                 <Link 
                   href={`/${locale}/forgot-password`}
-                  className="text-sm text-primary-600 hover:text-primary-700"
+                  className="text-sm text-brand-red hover:text-brand-red-light"
                 >
                   {t.forgotPassword}
                 </Link>
               </div>
 
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed"
+              <Button 
+                type="submit" 
+                fullWidth 
+                isLoading={isLoading}
+                className="mt-2"
               >
-                {isLoading ? commonT.loading : t.signIn}
-              </button>
+                {t.signIn}
+              </Button>
             </form>
 
             <div className="mt-6">
               <div className="relative">
                 <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-gray-200 dark:border-gray-700" />
+                  <div className="w-full border-t border-dark-600" />
                 </div>
                 <div className="relative flex justify-center text-sm">
-                  <span className="px-2 bg-white dark:bg-gray-800 text-gray-500">Or</span>
+                  <span className="px-4 bg-dark-800 text-gray-500">Or continue with</span>
                 </div>
               </div>
 
               <button
                 type="button"
-                className="mt-4 w-full btn-secondary flex items-center justify-center gap-2"
+                className="mt-4 w-full py-3 px-4 bg-dark-700 border border-dark-600 rounded-lg text-gray-300 hover:bg-dark-600 transition-colors flex items-center justify-center gap-2"
               >
                 <svg className="w-5 h-5" viewBox="0 0 24 24">
                   <path
@@ -166,9 +172,9 @@ export default function LoginPage({ params: { locale = 'en' } }) {
               </button>
             </div>
 
-            <p className="mt-6 text-center text-gray-600 dark:text-gray-400">
+            <p className="mt-8 text-center text-gray-400">
               {t.hasAccount}{' '}
-              <Link href={`/${locale}/register`} className="text-primary-600 hover:text-primary-700 font-medium">
+              <Link href={`/${locale}/register`} className="text-brand-red hover:text-brand-red-light font-medium">
                 {t.signUp}
               </Link>
             </p>

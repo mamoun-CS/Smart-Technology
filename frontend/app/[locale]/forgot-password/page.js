@@ -4,8 +4,8 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Mail, ArrowLeft, Loader2, Send } from 'lucide-react';
-import { authAPI } from '../../../../lib/api';
-import { getDictionary } from '../../../../i18n';
+import { authAPI } from '../../../lib/api';
+import { getDictionary } from '../../../i18n';
 import { toast } from 'sonner';
 
 export default function ForgotPassword({ params: { locale = 'en' } }) {

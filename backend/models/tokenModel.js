@@ -5,7 +5,7 @@ const tokenModel = {
   // Create email token
   async createEmailToken(userId, type = 'verification') {
     const token = uuidv4();
-    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
     
     const query = `
       INSERT INTO email_tokens (user_id, token, type, expires_at)
@@ -20,7 +20,7 @@ const tokenModel = {
   async verifyEmailToken(token, type = 'verification') {
     const query = `
       SELECT * FROM email_tokens 
-      WHERE token = $1 AND type = $2 AND expires_at > CURRENT_TIMESTAMP
+      WHERE token = $1 AND type = $2 AND expires_at > NOW()
     `;
     const result = await pool.query(query, [token, type]);
     return result.rows[0];
@@ -35,7 +35,7 @@ const tokenModel = {
 
   // Delete expired tokens
   async deleteExpiredTokens() {
-    const query = 'DELETE FROM email_tokens WHERE expires_at < CURRENT_TIMESTAMP';
+    const query = 'DELETE FROM email_tokens WHERE expires_at < NOW()';
     await pool.query(query);
   },
 
@@ -57,7 +57,7 @@ const tokenModel = {
   async verifyRefreshToken(token) {
     const query = `
       SELECT * FROM refresh_tokens 
-      WHERE token = $1 AND expires_at > CURRENT_TIMESTAMP
+      WHERE token = $1 AND expires_at > NOW()
     `;
     const result = await pool.query(query, [token]);
     return result.rows[0];

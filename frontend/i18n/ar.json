@@ -29,7 +29,8 @@
     "total": "المجموع",
     "actions": "الإجراءات",
     "allRights": "جميع الحقوق محفوظة",
-    "viewAll": "عرض الكل"
+    "viewAll": "عرض الكل",
+    "addedToCart": "تمت الإضافة للسلة"
   },
   "nav": {
     "home": "الرئيسية",
@@ -230,9 +231,23 @@
     "unauthorized": "غير مصرح لك performing this action",
     "notFound": "المورد غير موجود"
   },
+  "footer": {
+    "subscribe": "اشترك في النشرة",
+    "emailPlaceholder": "أدخل بريدك الإلكتروني",
+    "address": "123 شارع التقنية، مدينة الذكية، SC 12345",
+    "phone": "+1 234 567 890",
+    "privacy": "سياسة الخصوصية",
+    "terms": "الشروط والأحكام"
+  },
   "home": {
     "heroTitle": "الذكاء والتكنولوجيا",
     "heroSubtitle": "تجربة تسوق متميزة",
+    "heroBadge": "تقنية متميزة",
+    "heroDesc": "اكتشف أحدث منتجات التقنية بجودة متميزة وأسعار تنافسية وخدمة ممتازة.",
+    "customers": "العملاء",
+    "satisfaction": "الرضا",
+    "ctaTitle": "هل أنت مستعد للبدء؟",
+    "ctaDesc": "انضم لآلاف العملاء satisfactions واكشف عن أفضل منتجات التقنية.",
     "fastDelivery": "توصيل سريع",
     "fastDeliveryDesc": "شحن موثوق وسريع إلى باب منزلك",
     "securePayment": "دفع آمن",

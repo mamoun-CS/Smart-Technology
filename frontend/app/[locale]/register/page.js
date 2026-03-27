@@ -6,11 +6,13 @@ import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Mail, Lock, User, Eye, EyeOff } from 'lucide-react';
+import { Mail, Lock, User, Eye, EyeOff, Store, ShoppingCart } from 'lucide-react';
 import { useAuthStore } from '../../../store/authStore';
 import { getDictionary } from '../../../i18n';
 import { cn } from '../../../lib/utils';
 import Navbar from '../../../components/Navbar';
+import Button from '../../../components/ui/Button';
+import { Input } from '../../../components/ui/Input';
 
 const registerSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
@@ -29,6 +31,7 @@ export default function RegisterPage({ params: { locale = 'en' } }) {
   const dict = getDictionary(locale);
   const t = dict?.auth || {};
   const commonT = dict?.common || {};
+  const errorsT = dict?.errors || {};
   
   const { register: registerUser, isLoading, error, isAuthenticated, clearError } = useAuthStore();
 
@@ -65,131 +68,141 @@ export default function RegisterPage({ params: { locale = 'en' } }) {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="min-h-screen bg-dark-950">
       <Navbar locale={locale} dict={dict} />
       
       <div className="pt-24 pb-12 flex items-center justify-center min-h-screen">
         <div className="w-full max-w-md px-4">
-          <div className="card p-8">
-            <div className="text-center mb-8">
-              <h1 className="text-2xl font-bold mb-2">{t.registerTitle}</h1>
-              <p className="text-gray-600 dark:text-gray-400">{t.registerSubtitle}</p>
+          {/* Logo */}
+          <div className="text-center mb-8">
+            <div className="logo w-16 h-16 mx-auto mb-4">
+              <span className="logo-text text-3xl">S</span>
             </div>
+            <h1 className="text-3xl font-bold text-white">{t.registerTitle}</h1>
+            <p className="text-gray-400 mt-2">{t.registerSubtitle}</p>
+          </div>
 
+          <div className="card p-8 bg-dark-800 border-dark-600">
             {error && (
-              <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg text-sm">
+              <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 text-red-400 rounded-lg text-sm">
                 {error}
               </div>
             )}
 
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-1">{t.name}</label>
-                <div className="relative">
-                  <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                  <input
-                    type="text"
-                    {...register('name')}
-                    className="input pl-10"
-                    placeholder="John Doe"
-                  />
-                </div>
-                {errors.name && (
-                  <p className="text-red-500 text-sm mt-1">{errors.name.message}</p>
-                )}
-              </div>
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+              <Input
+                label={t.name}
+                type="text"
+                placeholder="John Doe"
+                icon={User}
+                error={errors.name?.message}
+                {...register('name')}
+              />
+
+              <Input
+                label={t.email}
+                type="email"
+                placeholder="you@example.com"
+                icon={Mail}
+                error={errors.email?.message || errorsT.invalidEmail}
+                {...register('email')}
+              />
 
               <div>
-                <label className="block text-sm font-medium mb-1">{t.email}</label>
+                <label className="label text-gray-300">{t.password}</label>
                 <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                  <input
-                    type="email"
-                    {...register('email')}
-                    className="input pl-10"
-                    placeholder="you@example.com"
-                  />
-                </div>
-                {errors.email && (
-                  <p className="text-red-500 text-sm mt-1">{errors.email.message}</p>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium mb-1">{t.password}</label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">
+                    <Lock className="w-5 h-5" />
+                  </div>
                   <input
                     type={showPassword ? 'text' : 'password'}
                     {...register('password')}
-                    className="input pl-10 pr-10"
+                    className="input pl-10 pr-10 bg-dark-700 border-dark-600 text-white"
                     placeholder="••••••••"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300"
                   >
                     {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                   </button>
                 </div>
                 {errors.password && (
-                  <p className="text-red-500 text-sm mt-1">{errors.password.message}</p>
+                  <p className="text-red-500 text-sm mt-1.5">{errors.password.message}</p>
                 )}
               </div>
 
-              <div>
-                <label className="block text-sm font-medium mb-1">{t.confirmPassword}</label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    {...register('confirmPassword')}
-                    className="input pl-10"
-                    placeholder="••••••••"
-                  />
-                </div>
-                {errors.confirmPassword && (
-                  <p className="text-red-500 text-sm mt-1">{errors.confirmPassword.message}</p>
-                )}
-              </div>
+              <Input
+                label={t.confirmPassword}
+                type={showPassword ? 'text' : 'password'}
+                placeholder="••••••••"
+                icon={Lock}
+                error={errors.confirmPassword?.message || errorsT.passwordMatch}
+                {...register('confirmPassword')}
+              />
 
+              {/* Account Type Selection */}
               <div>
-                <label className="block text-sm font-medium mb-2">Account Type</label>
-                <div className="flex gap-4">
-                  <label className="flex items-center gap-2">
+                <label className="label text-gray-300">Account Type</label>
+                <div className="grid grid-cols-2 gap-3">
+                  <label className={cn(
+                    "flex flex-col items-center gap-2 p-4 rounded-xl border cursor-pointer transition-all",
+                    "border-dark-600 hover:border-brand-red/50 hover:bg-dark-700/50",
+                    "data-[selected=true]:border-brand-red data-[selected=true]:bg-brand-red/10"
+                  )}>
                     <input
                       type="radio"
                       value="customer"
                       {...register('role')}
-                      className="text-primary-600"
+                      className="sr-only"
                     />
-                    <span>Customer</span>
+                    <div className={cn(
+                      "w-10 h-10 rounded-full flex items-center justify-center transition-colors",
+                      "bg-dark-700 group-data-[selected=true]:bg-brand-red/20"
+                    )}>
+                      <ShoppingCart className="w-5 h-5 text-gray-400 group-data-[selected=true]:text-brand-red" />
+                    </div>
+                    <span className="text-sm font-medium text-gray-300">Customer</span>
+                    <span className="text-xs text-gray-500">Shop & buy</span>
                   </label>
-                  <label className="flex items-center gap-2">
+                  
+                  <label className={cn(
+                    "flex flex-col items-center gap-2 p-4 rounded-xl border cursor-pointer transition-all",
+                    "border-dark-600 hover:border-brand-red/50 hover:bg-dark-700/50",
+                    "data-[selected=true]:border-brand-red data-[selected=true]:bg-brand-red/10"
+                  )}>
                     <input
                       type="radio"
                       value="trader"
                       {...register('role')}
-                      className="text-primary-600"
+                      className="sr-only"
                     />
-                    <span>Trader (Merchant)</span>
+                    <div className={cn(
+                      "w-10 h-10 rounded-full flex items-center justify-center transition-colors",
+                      "bg-dark-700 group-data-[selected=true]:bg-brand-red/20"
+                    )}>
+                      <Store className="w-5 h-5 text-gray-400 group-data-[selected=true]:text-brand-red" />
+                    </div>
+                    <span className="text-sm font-medium text-gray-300">Trader</span>
+                    <span className="text-xs text-gray-500">Sell products</span>
                   </label>
                 </div>
               </div>
 
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed"
+              <Button 
+                type="submit" 
+                fullWidth 
+                isLoading={isLoading}
+                className="mt-2"
               >
-                {isLoading ? commonT.loading : t.signUp}
-              </button>
+                {t.signUp}
+              </Button>
             </form>
 
-            <p className="mt-6 text-center text-gray-600 dark:text-gray-400">
+            <p className="mt-8 text-center text-gray-400">
               {t.hasAccount}{' '}
-              <Link href={`/${locale}/login`} className="text-primary-600 hover:text-primary-700 font-medium">
+              <Link href={`/${locale}/login`} className="text-brand-red hover:text-brand-red-light font-medium">
                 {t.signIn}
               </Link>
             </p>

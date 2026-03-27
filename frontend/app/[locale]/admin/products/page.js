@@ -101,11 +101,32 @@ export default function ProductsManagement({ params: { locale = 'en' } }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
+      const unitPrice = parseFloat(formData.unit_price);
+      const wholesalePrice = parseFloat(formData.wholesale_price) || unitPrice;
+      const minOrderQuantity = parseInt(formData.min_order_quantity) || 1;
+      
+      // Validate wholesale pricing
+      if (wholesalePrice && unitPrice && wholesalePrice >= unitPrice) {
+        toast.error(locale === 'ar' 
+          ? 'سعر الجملة يجب أن يكون أقل من سعر التجزئة' 
+          : 'Wholesale price must be less than retail price'
+        );
+        return;
+      }
+      
+      if (minOrderQuantity < 1) {
+        toast.error(locale === 'ar' 
+          ? 'الحد الأدنى للطلب يجب أن يكون على الأقل 1' 
+          : 'Minimum order quantity must be at least 1'
+        );
+        return;
+      }
+      
       const data = {
         ...formData,
-        unit_price: parseFloat(formData.unit_price),
-        wholesale_price: parseFloat(formData.wholesale_price) || parseFloat(formData.unit_price),
-        min_order_quantity: parseInt(formData.min_order_quantity) || 1,
+        unit_price: unitPrice,
+        wholesale_price: wholesalePrice,
+        min_order_quantity: minOrderQuantity,
         stock: parseInt(formData.stock) || 0
       };
       

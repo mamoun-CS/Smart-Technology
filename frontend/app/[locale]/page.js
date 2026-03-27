@@ -4,15 +4,19 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { ArrowRight, Star, Zap, Shield, Truck } from 'lucide-react';
+import { ArrowRight, Star, Zap, Shield, Truck, ChevronRight, Sparkles } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { productsAPI } from '../../lib/api';
 import { getDictionary } from '../../i18n';
 import { formatPrice, cn } from '../../lib/utils';
 import Navbar from '../../components/Navbar';
+import Footer from '../../components/ui/Footer';
+import ProductCard from '../../components/ui/ProductCard';
+import Button from '../../components/ui/Button';
 
 export default function HomePage({ params: { locale = 'en' } }) {
   const [products, setProducts] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const dict = getDictionary(locale);
   const t = dict?.common || {};
@@ -23,195 +27,306 @@ export default function HomePage({ params: { locale = 'en' } }) {
   const { isAuthenticated } = useAuthStore();
 
   useEffect(() => {
-    // Redirect logged-in users to profile
-    if (isAuthenticated) {
-      router.replace(`/${locale}/profile`);
-      return;
-    }
-    fetchProducts();
-  }, [isAuthenticated, router, locale]);
+    // Don't redirect logged-in users - let them browse
+    fetchData();
+  }, [locale]);
 
-  const fetchProducts = async () => {
+  const fetchData = async () => {
     try {
-      const response = await productsAPI.getAll({ limit: 8 });
-      setProducts(response.data.products);
+      const [productsRes, categoriesRes] = await Promise.all([
+        productsAPI.getAll({ limit: 8, is_featured: 1 }),
+        productsAPI.getCategories(),
+      ]);
+      setProducts(productsRes.data.products || []);
+      setCategories(categoriesRes.data.categories || []);
     } catch (error) {
-      console.error('Error fetching products:', error);
+      console.error('Error fetching data:', error);
     } finally {
       setIsLoading(false);
     }
   };
 
+  const features = [
+    {
+      icon: Zap,
+      title: homeT.fastDelivery || 'Fast Delivery',
+      description: homeT.fastDeliveryDesc || 'Quick and reliable shipping to your doorstep',
+    },
+    {
+      icon: Shield,
+      title: homeT.securePayment || 'Secure Payment',
+      description: homeT.securePaymentDesc || '100% secure payment methods',
+    },
+    {
+      icon: Truck,
+      title: homeT.freeReturns || 'Free Returns',
+      description: homeT.freeReturnsDesc || '30-day return policy',
+    },
+  ];
+
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-gray-50 dark:bg-dark-950">
       <Navbar locale={locale} dict={dict} />
       
       {/* Hero Section */}
-      <section className="relative pt-24 md:pt-32 pb-16 md:pb-24 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary-50 via-white to-orange-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900" />
-        <div className="absolute top-20 right-0 w-96 h-96 bg-primary-200/30 rounded-full blur-3xl" />
-        <div className="absolute bottom-0 left-0 w-96 h-96 bg-orange-200/30 rounded-full blur-3xl" />
+      <section className="relative pt-28 pb-16 md:pt-36 md:pb-24 overflow-hidden">
+        {/* Background */}
+        <div className="absolute inset-0 bg-gradient-to-br from-dark-950 via-dark-900 to-dark-950" />
+        <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-brand-red/10 rounded-full blur-[120px]" />
+        <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-brand-red/5 rounded-full blur-[100px]" />
         
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center">
-            <h1 className="text-4xl md:text-6xl font-bold mb-6">
-              <span className="gradient-text">{homeT.heroTitle || 'Smart Technology'}</span>
-              <br />
-              <span className="text-gray-900 dark:text-white">{homeT.heroSubtitle || 'Premium Shopping Experience'}</span>
-            </h1>
-            <p className="text-lg md:text-xl text-gray-600 dark:text-gray-300 mb-8 max-w-2xl mx-auto">
-              Discover the latest technology products with premium quality, competitive prices, and excellent service.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link href={`/${locale}/products`} className="btn-primary inline-flex items-center gap-2">
-                {productsT.shop || 'Shop Now'}
-                <ArrowRight className="w-5 h-5" />
-              </Link>
-              <Link href={`/${locale}/register`} className="btn-secondary inline-flex items-center gap-2">
-                {t.register}
-              </Link>
+        <div className="relative container-custom">
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            {/* Left Content */}
+            <div className="text-center lg:text-left">
+              <div className="inline-flex items-center gap-2 px-4 py-2 bg-brand-red/10 rounded-full mb-6">
+                <Sparkles className="w-4 h-4 text-brand-red" />
+                <span className="text-sm font-medium text-brand-red">
+                  {homeT.heroBadge || 'Premium Technology'}
+                </span>
+              </div>
+              
+              <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6">
+                <span className="text-white">
+                  {homeT.heroTitle || 'Smart Technology'}
+                </span>
+                <br />
+                <span className="gradient-text">
+                  {homeT.heroSubtitle || 'Premium Shopping Experience'}
+                </span>
+              </h1>
+              
+              <p className="text-lg text-gray-400 mb-8 max-w-xl mx-auto lg:mx-0">
+                {homeT.heroDesc || 'Discover the latest technology products with premium quality, competitive prices, and excellent service.'}
+              </p>
+              
+              <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
+                <Link href={`/${locale}/products`}>
+                  <Button size="lg" className="w-full sm:w-auto">
+                    {productsT.shop || 'Shop Now'}
+                    <ArrowRight className="w-5 h-5" />
+                  </Button>
+                </Link>
+                <Link href={`/${locale}/register`}>
+                  <Button variant="secondary" size="lg" className="w-full sm:w-auto">
+                    {t.register}
+                  </Button>
+                </Link>
+              </div>
+
+              {/* Stats */}
+              <div className="flex flex-wrap gap-8 mt-12 justify-center lg:justify-start">
+                <div>
+                  <div className="text-2xl font-bold text-white">10K+</div>
+                  <div className="text-sm text-gray-500">{homeT.products || 'Products'}</div>
+                </div>
+                <div>
+                  <div className="text-2xl font-bold text-white">50K+</div>
+                  <div className="text-sm text-gray-500">{homeT.customers || 'Customers'}</div>
+                </div>
+                <div>
+                  <div className="text-2xl font-bold text-white">99%</div>
+                  <div className="text-sm text-gray-500">{homeT.satisfaction || 'Satisfaction'}</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Right Content - Hero Image/Logo */}
+            <div className="hidden lg:block relative">
+              <div className="relative w-full aspect-square max-w-[500px] mx-auto">
+                {/* Animated gradient circle */}
+                <div className="absolute inset-0 rounded-full bg-gradient-to-br from-brand-red via-brand-red-dark to-dark-900 opacity-20 animate-pulse-slow" />
+                
+                {/* Logo showcase */}
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="w-48 h-48 rounded-2xl bg-brand-gradient flex items-center justify-center shadow-brand-lg animate-float">
+                    <span className="text-white font-bold text-7xl">S</span>
+                  </div>
+                </div>
+
+                {/* Floating product cards */}
+                <div className="absolute top-10 right-0 w-32 h-40 bg-dark-800 rounded-xl border border-dark-600 shadow-dark-lg p-3 animate-fadeIn">
+                  <div className="w-full h-20 bg-dark-700 rounded-lg mb-2 flex items-center justify-center">
+                    <span className="text-2xl">📱</span>
+                  </div>
+                  <div className="h-3 w-20 bg-dark-700 rounded mb-1" />
+                  <div className="h-3 w-12 bg-brand-red rounded" />
+                </div>
+
+                <div className="absolute bottom-10 left-0 w-32 h-40 bg-dark-800 rounded-xl border border-dark-600 shadow-dark-lg p-3 animate-fadeIn">
+                  <div className="w-full h-20 bg-dark-700 rounded-lg mb-2 flex items-center justify-center">
+                    <span className="text-2xl">💻</span>
+                  </div>
+                  <div className="h-3 w-20 bg-dark-700 rounded mb-1" />
+                  <div className="h-3 w-12 bg-brand-red rounded" />
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Features */}
-      <section className="py-16 bg-white dark:bg-gray-800">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="text-center p-6">
-              <div className="w-12 h-12 mx-auto mb-4 rounded-full bg-primary-100 flex items-center justify-center">
-                <Zap className="w-6 h-6 text-primary-600" />
+      {/* Features Section */}
+      <section className="py-16 bg-dark-900">
+        <div className="container-custom">
+          <div className="grid md:grid-cols-3 gap-8">
+            {features.map((feature, index) => (
+              <div 
+                key={index}
+                className="group p-6 rounded-2xl bg-dark-800 border border-dark-600 hover:border-brand-red/50 transition-all duration-300 hover:shadow-brand"
+              >
+                <div className="w-14 h-14 rounded-xl bg-brand-gradient flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                  <feature.icon className="w-7 h-7 text-white" />
+                </div>
+                <h3 className="text-xl font-semibold text-white mb-2">{feature.title}</h3>
+                <p className="text-gray-400">{feature.description}</p>
               </div>
-              <h3 className="text-lg font-semibold mb-2">{homeT.fastDelivery || 'Fast Delivery'}</h3>
-              <p className="text-gray-600 dark:text-gray-300">{homeT.fastDeliveryDesc || 'Quick and reliable shipping to your doorstep'}</p>
-            </div>
-            <div className="text-center p-6">
-              <div className="w-12 h-12 mx-auto mb-4 rounded-full bg-primary-100 flex items-center justify-center">
-                <Shield className="w-6 h-6 text-primary-600" />
-              </div>
-              <h3 className="text-lg font-semibold mb-2">{homeT.securePayment || 'Secure Payment'}</h3>
-              <p className="text-gray-600 dark:text-gray-300">{homeT.securePaymentDesc || '100% secure payment methods'}</p>
-            </div>
-            <div className="text-center p-6">
-              <div className="w-12 h-12 mx-auto mb-4 rounded-full bg-primary-100 flex items-center justify-center">
-                <Truck className="w-6 h-6 text-primary-600" />
-              </div>
-              <h3 className="text-lg font-semibold mb-2">{homeT.freeReturns || 'Free Returns'}</h3>
-              <p className="text-gray-600 dark:text-gray-300">{homeT.freeReturnsDesc || '30-day return policy'}</p>
-            </div>
+            ))}
           </div>
         </div>
       </section>
+
+      {/* Categories Section */}
+      {categories.length > 0 && (
+        <section className="py-16">
+          <div className="container-custom">
+            <div className="flex items-center justify-between mb-8">
+              <h2 className="heading-2 text-gray-900 dark:text-white">
+                {navT.categories || 'Categories'}
+              </h2>
+              <Link 
+                href={`/${locale}/products`}
+                className="text-brand-red hover:text-brand-red-light font-medium inline-flex items-center gap-1"
+              >
+                {t.viewAll}
+                <ChevronRight className="w-4 h-4" />
+              </Link>
+            </div>
+
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+              {categories.slice(0, 6).map((category) => (
+                <Link
+                  key={category.id}
+                  href={`/${locale}/products?category=${category.id}`}
+                  className="group p-6 rounded-xl bg-white dark:bg-dark-800 border border-gray-100 dark:border-dark-600 hover:border-brand-red hover:shadow-brand transition-all text-center"
+                >
+                  <div className="w-16 h-16 mx-auto mb-3 rounded-full bg-gray-100 dark:bg-dark-700 flex items-center justify-center group-hover:bg-brand-red/10 transition-colors">
+                    <span className="text-3xl">
+                      {getCategoryIcon(category.name_en)}
+                    </span>
+                  </div>
+                  <h3 className="font-medium text-gray-900 dark:text-white">
+                    {locale === 'ar' ? category.name_ar : category.name_en}
+                  </h3>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Products Section */}
-      <section className="py-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <section className="py-16 bg-dark-900">
+        <div className="container-custom">
           <div className="flex items-center justify-between mb-8">
-            <h2 className="text-2xl md:text-3xl font-bold">{productsT.featured || 'Featured Products'}</h2>
+            <div>
+              <h2 className="heading-2 text-white">
+                {productsT.featured || 'Featured Products'}
+              </h2>
+              <p className="text-gray-400 mt-1">
+                {productsT.featuredDesc || 'Handpicked selection of premium tech products'}
+              </p>
+            </div>
             <Link 
-              href={`/${locale}/products`} 
-              className="text-primary-600 hover:text-primary-700 font-medium inline-flex items-center gap-1"
+              href={`/${locale}/products`}
+              className="text-brand-red hover:text-brand-red-light font-medium inline-flex items-center gap-1"
             >
-              View All <ArrowRight className="w-4 h-4" />
+              {t.viewAll}
+              <ChevronRight className="w-4 h-4" />
             </Link>
           </div>
 
           {isLoading ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
               {[...Array(8)].map((_, i) => (
-                <div key={i} className="card p-4">
-                  <div className="skeleton h-48 w-full mb-4" />
-                  <div className="skeleton h-4 w-3/4 mb-2" />
-                  <div className="skeleton h-4 w-1/2" />
+                <div key={i} className="card p-0">
+                  <div className="skeleton aspect-square" />
+                  <div className="p-4 space-y-3">
+                    <div className="skeleton h-4 w-3/4" />
+                    <div className="skeleton h-4 w-1/2" />
+                    <div className="skeleton h-5 w-1/3" />
+                  </div>
                 </div>
               ))}
             </div>
-          ) : (
+          ) : products.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
               {products.map((product) => (
-                <Link 
-                  key={product.id} 
-                  href={`/${locale}/products/${product.id}`}
-                  className="card group"
-                >
-                  <div className="relative h-48 bg-gray-100 dark:bg-gray-700">
-                    {product.images?.[0] ? (
-                      <Image 
-                        src={product.images[0]} 
-                        alt={locale === 'ar' ? product.name_ar : product.name_en}
-                        fill
-                        className="object-cover group-hover:scale-105 transition-transform duration-300"
-                      />
-                    ) : (
-                      <div className="flex items-center justify-center h-full">
-                        <span className="text-4xl">📦</span>
-                      </div>
-                    )}
-                  </div>
-                  <div className="p-4">
-                    <h3 className="font-semibold text-gray-900 dark:text-white mb-1 line-clamp-1">
-                      {locale === 'ar' ? product.name_ar : product.name_en}
-                    </h3>
-                    <div className="flex items-center gap-1 mb-2">
-                      {[...Array(5)].map((_, i) => (
-                        <Star key={i} className="w-4 h-4 text-yellow-400 fill-current" />
-                      ))}
-                    </div>
-                    <p className="text-lg font-bold text-primary-600">
-                      {formatPrice(product.price, locale)}
-                    </p>
-                  </div>
-                </Link>
+                <ProductCard
+                  key={product.id}
+                  product={product}
+                  locale={locale}
+                  dict={dict}
+                />
               ))}
+            </div>
+          ) : (
+            <div className="text-center py-16">
+              <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-dark-700 flex items-center justify-center">
+                <span className="text-4xl">📦</span>
+              </div>
+              <p className="text-gray-400">{productsT.noProductsFound || 'No products found'}</p>
             </div>
           )}
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="bg-gray-900 text-white py-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-            <div>
-              <div className="flex items-center gap-2 mb-4">
-                <div className="w-10 h-10 rounded-lg bg-gradient-to-r from-primary-700 via-primary-600 to-orange-400 flex items-center justify-center">
-                  <span className="text-white font-bold text-xl">S</span>
-                </div>
-                <span className="text-xl font-bold">{homeT.brandName || 'Smart Technology'}</span>
+      {/* CTA Section */}
+      <section className="py-16">
+        <div className="container-custom">
+          <div className="relative rounded-2xl bg-brand-gradient overflow-hidden">
+            <div className="absolute inset-0 bg-[url('/pattern.svg')] opacity-10" />
+            <div className="relative p-8 md:p-12 text-center">
+              <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
+                {homeT.ctaTitle || 'Ready to get started?'}
+              </h2>
+              <p className="text-white/80 mb-8 max-w-xl mx-auto">
+                {homeT.ctaDesc || 'Join thousands of satisfied customers and discover the best technology products.'}
+              </p>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <Link href={`/${locale}/register`}>
+                  <Button variant="secondary" size="lg" className="!text-dark-900 !bg-white !border-white hover:!bg-gray-100">
+                    {t.register}
+                  </Button>
+                </Link>
+                <Link href={`/${locale}/products`}>
+                  <Button variant="outline" size="lg" className="!text-white !border-white hover:!bg-white/10">
+                    {productsT.shop || 'Browse Products'}
+                  </Button>
+                </Link>
               </div>
-              <p className="text-gray-400">{homeT.footerDescription || 'Premium e-commerce platform for technology products.'}</p>
             </div>
-            <div>
-              <h4 className="font-semibold mb-4">{homeT.quickLinks || 'Quick Links'}</h4>
-              <ul className="space-y-2 text-gray-400">
-                <li><Link href={`/${locale}/products`} className="hover:text-white">{navT.products}</Link></li>
-                <li><Link href={`/${locale}/about`} className="hover:text-white">{homeT.about || 'About'}</Link></li>
-                <li><Link href={`/${locale}/contact`} className="hover:text-white">{homeT.contact || 'Contact'}</Link></li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="font-semibold mb-4">{homeT.account || 'Account'}</h4>
-              <ul className="space-y-2 text-gray-400">
-                <li><Link href={`/${locale}/login`} className="hover:text-white">{t.login}</Link></li>
-                <li><Link href={`/${locale}/register`} className="hover:text-white">{t.register}</Link></li>
-                <li><Link href={`/${locale}/orders`} className="hover:text-white">{homeT.orders || 'Orders'}</Link></li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="font-semibold mb-4">{homeT.contact || 'Contact'}</h4>
-              <ul className="space-y-2 text-gray-400">
-                <li>{homeT.email || 'Email'}: info@smarttech.com</li>
-                <li>{homeT.phone || 'Phone'}: +1 234 567 890</li>
-                <li>{homeT.address || 'Address'}: Tech City, TC 12345</li>
-              </ul>
-            </div>
-          </div>
-          <div className="border-t border-gray-800 mt-8 pt-8 text-center text-gray-400">
-            <p>&copy; {new Date().getFullYear()} {homeT.brandName || 'Smart Technology'}. {t.allRights || 'All rights reserved.'}</p>
           </div>
         </div>
-      </footer>
+      </section>
+
+      {/* Footer */}
+      <Footer locale={locale} dict={dict} />
     </div>
   );
+}
+
+function getCategoryIcon(name) {
+  const icons = {
+    'phones': '📱',
+    'laptops': '💻',
+    'tablets': '📲',
+    'accessories': '🎧',
+    'wearables': '⌚',
+    'cameras': '📷',
+    'gaming': '🎮',
+    'smart home': '🏠',
+  };
+  const key = name?.toLowerCase() || '';
+  return icons[key] || '📦';
 }

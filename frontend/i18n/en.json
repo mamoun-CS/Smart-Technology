@@ -29,7 +29,8 @@
     "total": "Total",
     "actions": "Actions",
     "allRights": "All rights reserved.",
-    "viewAll": "View All"
+    "viewAll": "View All",
+    "addedToCart": "Added to cart"
   },
   "nav": {
     "home": "Home",
@@ -230,9 +231,23 @@
     "unauthorized": "You are not authorized to perform this action",
     "notFound": "Resource not found"
   },
+  "footer": {
+    "subscribe": "Subscribe to newsletter",
+    "emailPlaceholder": "Enter your email",
+    "address": "123 Tech Street, Smart City, SC 12345",
+    "phone": "+1 234 567 890",
+    "privacy": "Privacy Policy",
+    "terms": "Terms of Service"
+  },
   "home": {
     "heroTitle": "Smart Technology",
     "heroSubtitle": "Premium Shopping Experience",
+    "heroBadge": "Premium Technology",
+    "heroDesc": "Discover the latest technology products with premium quality, competitive prices, and excellent service.",
+    "customers": "Customers",
+    "satisfaction": "Satisfaction",
+    "ctaTitle": "Ready to get started?",
+    "ctaDesc": "Join thousands of satisfied customers and discover the best technology products.",
     "fastDelivery": "Fast Delivery",
     "fastDeliveryDesc": "Quick and reliable shipping to your doorstep",
     "securePayment": "Secure Payment",

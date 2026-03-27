@@ -70,18 +70,38 @@ const productController = {
         });
       }
 
-      const { name_en, name_ar, description_en, description_ar, price, stock, category_id, images } = req.body;
+      const { name_en, name_ar, description_en, description_ar, unit_price, wholesale_price, min_order_quantity, stock, category_id, images, barcode, qr_code, warehouse_location } = req.body;
+      
+      // Validate wholesale pricing
+      if (wholesale_price && unit_price && wholesale_price >= unit_price) {
+        return res.status(400).json({
+          success: false,
+          message: 'Wholesale price must be less than retail price.'
+        });
+      }
+      
+      if (min_order_quantity && min_order_quantity < 1) {
+        return res.status(400).json({
+          success: false,
+          message: 'Minimum order quantity must be at least 1.'
+        });
+      }
       
       const product = await productModel.create({
         name_en,
         name_ar,
         description_en,
         description_ar,
-        price,
+        unit_price,
+        wholesale_price,
+        min_order_quantity: min_order_quantity || 1,
         stock,
         category_id,
         created_by: req.user.id,
-        images
+        images,
+        barcode,
+        qr_code,
+        warehouse_location
       });
 
       res.status(201).json({
@@ -110,7 +130,7 @@ const productController = {
       }
 
       const { id } = req.params;
-      const { name_en, name_ar, description_en, description_ar, price, stock, category_id, images } = req.body;
+      const { name_en, name_ar, description_en, description_ar, unit_price, wholesale_price, min_order_quantity, stock, category_id, images, barcode, qr_code, warehouse_location } = req.body;
 
       // Check if product exists
       const existingProduct = await productModel.findById(id);
@@ -129,15 +149,39 @@ const productController = {
         });
       }
 
+      // Validate wholesale pricing
+      const finalUnitPrice = unit_price || existingProduct.unit_price;
+      const finalWholesalePrice = wholesale_price !== undefined ? wholesale_price : existingProduct.wholesale_price;
+      const finalMinOrderQuantity = min_order_quantity !== undefined ? min_order_quantity : existingProduct.min_order_quantity;
+      
+      if (finalWholesalePrice && finalUnitPrice && finalWholesalePrice >= finalUnitPrice) {
+        return res.status(400).json({
+          success: false,
+          message: 'Wholesale price must be less than retail price.'
+        });
+      }
+      
+      if (finalMinOrderQuantity && finalMinOrderQuantity < 1) {
+        return res.status(400).json({
+          success: false,
+          message: 'Minimum order quantity must be at least 1.'
+        });
+      }
+
       const product = await productModel.update(id, {
         name_en,
         name_ar,
         description_en,
         description_ar,
-        price,
+        unit_price,
+        wholesale_price,
+        min_order_quantity,
         stock,
         category_id,
-        images
+        images,
+        barcode,
+        qr_code,
+        warehouse_location
       });
 
       res.json({

@@ -3,6 +3,7 @@ const nextConfig = {
   reactStrictMode: true,
   images: {
     domains: ['localhost', 'res.cloudinary.com', 'images.unsplash.com'],
+    unoptimized: true,
   },
   async rewrites() {
     return [

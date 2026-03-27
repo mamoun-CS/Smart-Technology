@@ -96,6 +96,14 @@ const authController = {
         });
       }
 
+      // Check if email is verified
+      if (!user.is_verified) {
+        return res.status(403).json({ 
+          success: false, 
+          message: 'Please verify your email before logging in.' 
+        });
+      }
+
       // Check if trader is approved
       if (user.role === 'trader' && !user.approved) {
         return res.status(403).json({ 
@@ -249,13 +257,18 @@ const authController = {
     try {
       const { token } = req.params;
 
+      console.log('Verifying email with token:', token);
+
       const tokenData = await tokenModel.verifyEmailToken(token, 'verification');
       if (!tokenData) {
+        console.log('Token verification failed - token not found or expired');
         return res.status(400).json({ 
           success: false, 
           message: 'Invalid or expired verification token.' 
         });
       }
+
+      console.log('Token verified successfully for user:', tokenData.user_id);
 
       await userModel.verifyUser(tokenData.user_id);
       await tokenModel.deleteEmailToken(token);

@@ -54,7 +54,7 @@ const emailUtils = {
             </div>
             <p>Or copy and paste this link in your browser:</p>
             <p style="word-break: break-all;">${verificationUrl}</p>
-            <p>This link will expire in 24 hours.</p>
+            <p>This link will expire in 1 hour.</p>
             <p>If you didn't create an account, please ignore this email.</p>
           </div>
           <div style="background: #f5f5f5; padding: 15px; text-align: center; font-size: 12px; color: #666;">
@@ -88,7 +88,7 @@ const emailUtils = {
             </div>
             <p>Or copy and paste this link in your browser:</p>
             <p style="word-break: break-all;">${resetUrl}</p>
-            <p>This link will expire in 24 hours.</p>
+            <p>This link will expire in 1 hour.</p>
             <p>If you didn't request a password reset, please ignore this email and your password will remain unchanged.</p>
           </div>
           <div style="background: #f5f5f5; padding: 15px; text-align: center; font-size: 12px; color: #666;">

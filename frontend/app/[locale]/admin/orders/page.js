@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Eye, Search, Filter, Package, Truck, Check, X, Clock } from 'lucide-react';
+import { Eye, Search, Filter, Package, Truck, Check, X, Clock, MapPin, Store, AlertCircle } from 'lucide-react';
 import { useAuthStore } from '../../../../store/authStore';
 import { ordersAPI } from '../../../../lib/api';
 import { getDictionary } from '../../../../i18n';
@@ -13,10 +13,13 @@ import Navbar from '../../../../components/Navbar';
 
 const STATUSES = {
   pending: { en: 'Pending', ar: 'معلق', color: 'bg-yellow-100 text-yellow-600' },
+  confirmed: { en: 'Confirmed', ar: 'مؤكد', color: 'bg-blue-100 text-blue-600' },
+  contacted: { en: 'Contacted', ar: 'تم التواصل', color: 'bg-indigo-100 text-indigo-600' },
   processing: { en: 'Processing', ar: 'قيد المعالجة', color: 'bg-blue-100 text-blue-600' },
   shipped: { en: 'Shipped', ar: 'تم الشحن', color: 'bg-purple-100 text-purple-600' },
   delivered: { en: 'Delivered', ar: 'تم التسليم', color: 'bg-green-100 text-green-600' },
-  cancelled: { en: 'Cancelled', ar: 'ملغى', color: 'bg-red-100 text-red-600' }
+  cancelled: { en: 'Cancelled', ar: 'ملغى', color: 'bg-red-100 text-red-600' },
+  under_review: { en: 'Under Review', ar: 'قيد المراجعة', color: 'bg-orange-100 text-orange-600' }
 };
 
 export default function OrdersManagement({ params: { locale = 'en' } }) {
@@ -75,6 +78,25 @@ export default function OrdersManagement({ params: { locale = 'en' } }) {
         {locale === 'ar' ? statusInfo.ar : statusInfo.en}
       </span>
     );
+  };
+
+  const getDeliveryMethodBadge = (method) => {
+    if (method === 'shipping') {
+      return (
+        <span className="flex items-center gap-1 px-2 py-1 rounded text-xs font-medium bg-blue-100 text-blue-600">
+          <Truck className="w-3 h-3" />
+          {locale === 'ar' ? 'شحن' : 'Shipping'}
+        </span>
+      );
+    } else if (method === 'pickup') {
+      return (
+        <span className="flex items-center gap-1 px-2 py-1 rounded text-xs font-medium bg-green-100 text-green-600">
+          <Store className="w-3 h-3" />
+          {locale === 'ar' ? 'استلام' : 'Pickup'}
+        </span>
+      );
+    }
+    return null;
   };
 
   if (isLoading) {
@@ -156,6 +178,8 @@ export default function OrdersManagement({ params: { locale = 'en' } }) {
                 <tr>
                   <th className="px-4 py-3 text-left text-sm font-medium">{locale === 'ar' ? 'رقم الطلب' : 'Order ID'}</th>
                   <th className="px-4 py-3 text-left text-sm font-medium">{locale === 'ar' ? 'العميل' : 'Customer'}</th>
+                  <th className="px-4 py-3 text-left text-sm font-medium">{locale === 'ar' ? 'المدينة' : 'City'}</th>
+                  <th className="px-4 py-3 text-left text-sm font-medium">{locale === 'ar' ? 'التوصيل' : 'Delivery'}</th>
                   <th className="px-4 py-3 text-left text-sm font-medium">{locale === 'ar' ? 'الإجمالي' : 'Total'}</th>
                   <th className="px-4 py-3 text-left text-sm font-medium">{locale === 'ar' ? 'الحالة' : 'Status'}</th>
                   <th className="px-4 py-3 text-left text-sm font-medium">{locale === 'ar' ? 'التاريخ' : 'Date'}</th>
@@ -172,8 +196,36 @@ export default function OrdersManagement({ params: { locale = 'en' } }) {
                         <p className="text-sm text-gray-500">{order.customer_email || '-'}</p>
                       </div>
                     </td>
-                    <td className="px-4 py-3">{formatPrice(order.total_amount, locale)}</td>
-                    <td className="px-4 py-3">{getStatusBadge(order.status)}</td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-1">
+                        <MapPin className="w-4 h-4 text-gray-400" />
+                        <span>{order.city || '-'}</span>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3">
+                      {getDeliveryMethodBadge(order.delivery_method)}
+                    </td>
+                    <td className="px-4 py-3">
+                      <div>
+                        <p className="font-medium">{formatPrice(order.total_amount, locale)}</p>
+                        {order.shipping_cost > 0 && (
+                          <p className="text-xs text-gray-500">
+                            +{formatPrice(order.shipping_cost, locale)} {locale === 'ar' ? 'شحن' : 'shipping'}
+                          </p>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-2">
+                        {getStatusBadge(order.status)}
+                        {order.is_large_order && (
+                          <span className="flex items-center gap-1 px-2 py-1 rounded text-xs font-medium bg-orange-100 text-orange-600">
+                            <AlertCircle className="w-3 h-3" />
+                            {locale === 'ar' ? 'كبير' : 'Large'}
+                          </span>
+                        )}
+                      </div>
+                    </td>
                     <td className="px-4 py-3 text-sm text-gray-500">{formatDate(order.created_at, locale)}</td>
                     <td className="px-4 py-3">
                       <button 
@@ -218,11 +270,38 @@ export default function OrdersManagement({ params: { locale = 'en' } }) {
                     <div>
                       <p className="text-sm text-gray-500">{locale === 'ar' ? 'العنوان' : 'Shipping Address'}</p>
                       <p className="font-medium">{selectedOrder.shipping_address || '-'}</p>
-                      {selectedOrder.shipping_area && (
-                        <p className="text-sm text-gray-500">{selectedOrder.shipping_area}</p>
+                      {selectedOrder.city && (
+                        <div className="flex items-center gap-1 mt-1">
+                          <MapPin className="w-4 h-4 text-gray-400" />
+                          <span className="text-sm text-gray-500">{selectedOrder.city}</span>
+                        </div>
+                      )}
+                      {selectedOrder.delivery_method && (
+                        <div className="mt-1">
+                          {getDeliveryMethodBadge(selectedOrder.delivery_method)}
+                        </div>
                       )}
                     </div>
                   </div>
+
+                  {selectedOrder.is_large_order && (
+                    <div className="p-3 bg-orange-50 border border-orange-200 rounded-lg">
+                      <div className="flex items-start gap-2">
+                        <AlertCircle className="w-5 h-5 text-orange-500 flex-shrink-0 mt-0.5" />
+                        <div>
+                          <p className="text-sm font-medium text-orange-700">
+                            {locale === 'ar' ? 'طلب كبير' : 'Large Order'}
+                          </p>
+                          <p className="text-xs text-orange-600 mt-1">
+                            {locale === 'ar' 
+                              ? 'هذا الطلب يتجاوز الحد الأقصى للطلبات التلقائية.'
+                              : 'This order exceeds the automatic order limit.'
+                            }
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
 
                   <div className="border-t pt-4">
                     <h3 className="font-semibold mb-3">{locale === 'ar' ? 'المنتجات' : 'Items'}</h3>

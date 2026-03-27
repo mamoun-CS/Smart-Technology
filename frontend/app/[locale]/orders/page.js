@@ -9,6 +9,7 @@ import { ordersAPI } from '../../../lib/api';
 import { getDictionary } from '../../../i18n';
 import { formatPrice, formatDate, getStatusColor, cn } from '../../../lib/utils';
 import Navbar from '../../../components/Navbar';
+import { MapPin, Truck, Store, AlertCircle } from 'lucide-react';
 
 export default function OrdersPage({ params: { locale = 'en' } }) {
   const [orders, setOrders] = useState([]);
@@ -37,6 +38,25 @@ export default function OrdersPage({ params: { locale = 'en' } }) {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const getDeliveryMethodBadge = (method) => {
+    if (method === 'shipping') {
+      return (
+        <span className="flex items-center gap-1 px-2 py-1 rounded text-xs font-medium bg-blue-100 text-blue-600">
+          <Truck className="w-3 h-3" />
+          {locale === 'ar' ? 'شحن' : 'Shipping'}
+        </span>
+      );
+    } else if (method === 'pickup') {
+      return (
+        <span className="flex items-center gap-1 px-2 py-1 rounded text-xs font-medium bg-green-100 text-green-600">
+          <Store className="w-3 h-3" />
+          {locale === 'ar' ? 'استلام' : 'Pickup'}
+        </span>
+      );
+    }
+    return null;
   };
 
   if (isLoading) {
@@ -84,11 +104,65 @@ export default function OrdersPage({ params: { locale = 'en' } }) {
                       <p className="font-semibold">{ordersT.orderId}: #{order.id.slice(0, 8)}</p>
                       <p className="text-sm text-gray-500">{formatDate(order.created_at, locale)}</p>
                     </div>
-                    <span className={cn('px-3 py-1 rounded-full text-sm font-medium', getStatusColor(order.status))}>
-                      {ordersT[order.status] || order.status}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className={cn('px-3 py-1 rounded-full text-sm font-medium', getStatusColor(order.status))}>
+                        {ordersT[order.status] || order.status}
+                      </span>
+                      {order.is_large_order && (
+                        <span className="flex items-center gap-1 px-2 py-1 rounded text-xs font-medium bg-orange-100 text-orange-600">
+                          <AlertCircle className="w-3 h-3" />
+                          {locale === 'ar' ? 'طلب كبير' : 'Large Order'}
+                        </span>
+                      )}
+                    </div>
                   </div>
                   <div className="p-4">
+                    {/* Location and Delivery Info */}
+                    {(order.city || order.delivery_method) && (
+                      <div className="mb-4 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                        <div className="flex flex-wrap items-center gap-4">
+                          {order.city && (
+                            <div className="flex items-center gap-1">
+                              <MapPin className="w-4 h-4 text-gray-400" />
+                              <span className="text-sm text-gray-600 dark:text-gray-300">
+                                {order.city}
+                              </span>
+                            </div>
+                          )}
+                          {order.delivery_method && (
+                            <div>
+                              {getDeliveryMethodBadge(order.delivery_method)}
+                            </div>
+                          )}
+                          {order.shipping_cost > 0 && (
+                            <div className="text-sm text-gray-500">
+                              {locale === 'ar' ? 'تكلفة الشحن:' : 'Shipping:'} {formatPrice(order.shipping_cost, locale)}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Large Order Warning */}
+                    {order.is_large_order && (
+                      <div className="mb-4 p-3 bg-orange-50 border border-orange-200 rounded-lg">
+                        <div className="flex items-start gap-2">
+                          <AlertCircle className="w-5 h-5 text-orange-500 flex-shrink-0 mt-0.5" />
+                          <div>
+                            <p className="text-sm font-medium text-orange-700">
+                              {locale === 'ar' ? 'طلب كبير' : 'Large Order'}
+                            </p>
+                            <p className="text-xs text-orange-600 mt-1">
+                              {locale === 'ar' 
+                                ? 'سنتواصل معك بعد تأكيد العنوان.'
+                                : 'We will contact you after confirming your address.'
+                              }
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
                     <div className="space-y-3 mb-4">
                       {order.items?.map((item) => (
                         <div key={item.id} className="flex items-center gap-4">
@@ -100,6 +174,7 @@ export default function OrdersPage({ params: { locale = 'en' } }) {
                                 width={64}
                                 height={64}
                                 className="object-cover"
+                                unoptimized
                               />
                             ) : (
                               <div className="flex items-center justify-center h-full">📦</div>

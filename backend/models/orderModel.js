@@ -1,9 +1,46 @@
 const pool = require('./db');
+const cartModel = require('./cartModel');
 
 const orderModel = {
+  // Get system configuration value
+  async getConfigValue(key, defaultValue = null) {
+    const query = 'SELECT config_value FROM system_config WHERE config_key = $1';
+    const result = await pool.query(query, [key]);
+    return result.rows.length > 0 ? result.rows[0].config_value : defaultValue;
+  },
+
+  // Check if order is large based on total quantity
+  async isLargeOrder(totalQuantity) {
+    const threshold = await this.getConfigValue('large_order_threshold', '50');
+    return totalQuantity >= parseInt(threshold);
+  },
+
+  // Calculate shipping cost based on city and delivery method
+  async calculateShippingCost(city, deliveryMethod) {
+    // If pickup, shipping is free
+    if (deliveryMethod === 'pickup') {
+      return 0;
+    }
+
+    // Get shipping cost for the city
+    const query = `
+      SELECT price FROM shipping_areas 
+      WHERE LOWER(name_en) = LOWER($1) AND active = true
+      LIMIT 1
+    `;
+    const result = await pool.query(query, [city]);
+    
+    if (result.rows.length > 0) {
+      return parseFloat(result.rows[0].price);
+    }
+    
+    // Default shipping cost if city not found
+    return 0;
+  },
+
   // Create order from cart
   async createOrder(userId, orderData) {
-    const { shipping_address, payment_method } = orderData;
+    const { shipping_address, payment_method, city, delivery_method } = orderData;
     const client = await pool.connect();
     
     try {
@@ -23,26 +60,17 @@ const orderModel = {
         throw new Error('Cart is empty');
       }
       
-      // Calculate total price with quantity-based pricing
+      // Calculate total price with wholesale pricing logic
       let totalPrice = 0;
+      let totalQuantity = 0;
       const orderItems = [];
       
       for (const item of cartResult.rows) {
-        // Get price based on quantity
-        const priceQuery = `
-          SELECT price FROM product_pricing 
-          WHERE product_id = $1 AND min_quantity <= $2
-          ORDER BY min_quantity DESC
-          LIMIT 1
-        `;
-        const priceResult = await client.query(priceQuery, [item.product_id, item.quantity]);
-        
-        let price = item.base_price;
-        if (priceResult.rows.length > 0) {
-          price = priceResult.rows[0].price;
-        }
+        // Get price based on quantity using cart model's wholesale pricing logic
+        const price = await cartModel.getPriceWithQuantity(item.product_id, item.quantity);
         
         totalPrice += price * item.quantity;
+        totalQuantity += item.quantity;
         orderItems.push({
           product_id: item.product_id,
           quantity: item.quantity,
@@ -58,13 +86,45 @@ const orderModel = {
         await client.query(updateStockQuery, [item.quantity, item.product_id]);
       }
       
+      // Check if this is a large order
+      const isLargeOrder = await this.isLargeOrder(totalQuantity);
+      
+      // Calculate shipping cost
+      const shippingCost = await this.calculateShippingCost(city, delivery_method);
+      
+      // Determine order status based on order size
+      let orderStatus = 'pending';
+      if (isLargeOrder) {
+        orderStatus = 'under_review';
+      }
+      
       // Create order
       const orderQuery = `
-        INSERT INTO orders (user_id, total_price, status, shipping_address, payment_method)
-        VALUES ($1, $2, 'pending', $3, $4)
+        INSERT INTO orders (
+          user_id, 
+          total_price, 
+          status, 
+          shipping_address, 
+          payment_method,
+          city,
+          delivery_method,
+          shipping_cost,
+          is_large_order
+        )
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
         RETURNING *
       `;
-      const orderResult = await client.query(orderQuery, [userId, totalPrice, shipping_address, payment_method]);
+      const orderResult = await client.query(orderQuery, [
+        userId, 
+        totalPrice, 
+        orderStatus, 
+        shipping_address, 
+        payment_method,
+        city,
+        delivery_method,
+        shippingCost,
+        isLargeOrder
+      ]);
       const order = orderResult.rows[0];
       
       // Create order items
@@ -170,6 +230,7 @@ const orderModel = {
     
     let query = `
       SELECT o.id, o.user_id, o.total_price, o.status, o.shipping_address, o.payment_method, 
+             o.city, o.delivery_method, o.shipping_cost, o.is_large_order,
              o.created_at, o.updated_at,
              CAST(o.total_price AS VARCHAR) as total_amount, 
              u.name as customer_name, u.email as customer_email,
@@ -283,6 +344,11 @@ const orderModel = {
     const pendingQuery = "SELECT COUNT(*) FROM orders WHERE status = 'pending'";
     const pendingResult = await pool.query(pendingQuery);
     stats.pendingOrders = parseInt(pendingResult.rows[0].count);
+    
+    // Under review orders (large orders)
+    const underReviewQuery = "SELECT COUNT(*) FROM orders WHERE status = 'under_review'";
+    const underReviewResult = await pool.query(underReviewQuery);
+    stats.underReviewOrders = parseInt(underReviewResult.rows[0].count);
     
     // Recent orders
     const recentQuery = `

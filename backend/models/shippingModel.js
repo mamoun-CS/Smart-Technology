@@ -37,6 +37,22 @@ const shippingModel = {
     return result.rows[0];
   },
 
+  // Get shipping cost by city name
+  async getShippingCostByCity(cityName) {
+    const query = `
+      SELECT price FROM shipping_areas 
+      WHERE LOWER(name_en) = LOWER($1) AND active = true
+      LIMIT 1
+    `;
+    const result = await pool.query(query, [cityName]);
+    
+    if (result.rows.length > 0) {
+      return parseFloat(result.rows[0].price);
+    }
+    
+    return null;
+  },
+
   // Update shipping area
   async updateArea(id, areaData) {
     const { name_en, name_ar, price, estimated_days, active } = areaData;
