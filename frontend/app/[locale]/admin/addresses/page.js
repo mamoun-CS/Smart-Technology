@@ -9,7 +9,8 @@ import { adminAPI } from '@/lib';
 import { getDictionary } from '@/i18n';
 import { formatDate, cn } from '@/lib';
 import { toast } from 'sonner';
-import { Navbar } from '@/components';
+
+
 
 export default function AddressesManagement({ params: { locale = 'en' } }) {
   const [addresses, setAddresses] = useState([]);
@@ -107,7 +108,7 @@ export default function AddressesManagement({ params: { locale = 'en' } }) {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-        <Navbar locale={locale} dict={dict} />
+              
         <div className="pt-24 pb-12">
           <div className="max-w-7xl mx-auto px-4">
             <div className="skeleton h-8 w-48 mb-8" />
@@ -124,7 +125,8 @@ export default function AddressesManagement({ params: { locale = 'en' } }) {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <Navbar locale={locale} dict={dict} />
+       
+
       
       <div className="pt-24 pb-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

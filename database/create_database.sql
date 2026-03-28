@@ -5,10 +5,10 @@
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- ============================================
--- EXISTING TABLES (UPDATED)
+-- CORE TABLES
 -- ============================================
 
--- Users table (updated with new columns)
+-- Users table
 CREATE TABLE users (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     name VARCHAR(255) NOT NULL,
@@ -37,7 +37,7 @@ CREATE TABLE categories (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Products table (updated with new columns)
+-- Products table
 CREATE TABLE products (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     name_en VARCHAR(255) NOT NULL,
@@ -77,6 +77,10 @@ CREATE TABLE orders (
     status VARCHAR(50) DEFAULT 'pending',
     shipping_address TEXT,
     payment_method VARCHAR(50),
+    city VARCHAR(100),
+    delivery_method VARCHAR(20) CHECK (delivery_method IN ('shipping', 'pickup')),
+    shipping_cost DECIMAL(10, 2) DEFAULT 0,
+    is_large_order BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -129,10 +133,10 @@ CREATE TABLE refresh_tokens (
 );
 
 -- ============================================
--- NEW TABLES
+-- ADDITIONAL TABLES
 -- ============================================
 
--- 1. Reviews - Product reviews and ratings
+-- Reviews - Product reviews and ratings
 CREATE TABLE reviews (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     product_id UUID REFERENCES products(id) ON DELETE CASCADE,
@@ -142,7 +146,7 @@ CREATE TABLE reviews (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 2. Offers - Discount codes/coupons
+-- Offers - Discount codes/coupons
 CREATE TABLE offers (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     code VARCHAR(50) UNIQUE NOT NULL,
@@ -157,7 +161,7 @@ CREATE TABLE offers (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 3. Shipping areas - Shipping zones and costs
+-- Shipping areas - Shipping zones and costs
 CREATE TABLE shipping_areas (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     name_en VARCHAR(255) NOT NULL,
@@ -168,7 +172,7 @@ CREATE TABLE shipping_areas (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 4. Notifications - In-app notifications
+-- Notifications - In-app notifications
 CREATE TABLE notifications (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID REFERENCES users(id) ON DELETE CASCADE,
@@ -179,7 +183,7 @@ CREATE TABLE notifications (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 5. Inventory alerts - Low stock alerts
+-- Inventory alerts - Low stock alerts
 CREATE TABLE inventory_alerts (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     product_id UUID REFERENCES products(id) ON DELETE CASCADE,
@@ -188,7 +192,7 @@ CREATE TABLE inventory_alerts (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 6. Support tickets - Customer support tickets
+-- Support tickets - Customer support tickets
 CREATE TABLE support_tickets (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID REFERENCES users(id) ON DELETE SET NULL,
@@ -200,7 +204,7 @@ CREATE TABLE support_tickets (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 7. Ticket messages - Ticket replies
+-- Ticket messages - Ticket replies
 CREATE TABLE ticket_messages (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     ticket_id UUID REFERENCES support_tickets(id) ON DELETE CASCADE,
@@ -210,7 +214,7 @@ CREATE TABLE ticket_messages (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 8. Shipping addresses - User saved addresses
+-- Shipping addresses - User saved addresses
 CREATE TABLE shipping_addresses (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID REFERENCES users(id) ON DELETE CASCADE,
@@ -221,7 +225,7 @@ CREATE TABLE shipping_addresses (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 9. Product analytics - Track product views
+-- Product analytics - Track product views
 CREATE TABLE product_analytics (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     product_id UUID REFERENCES products(id) ON DELETE CASCADE,
@@ -231,7 +235,7 @@ CREATE TABLE product_analytics (
     UNIQUE(product_id)
 );
 
--- 10. Favorites - User favorite products
+-- Favorites - User favorite products
 CREATE TABLE favorites (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID REFERENCES users(id) ON DELETE CASCADE,
@@ -240,98 +244,84 @@ CREATE TABLE favorites (
     UNIQUE(user_id, product_id)
 );
 
+-- System configuration table
+CREATE TABLE system_config (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    config_key VARCHAR(100) UNIQUE NOT NULL,
+    config_value TEXT NOT NULL,
+    description TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 -- ============================================
 -- INDEXES
 -- ============================================
 
--- Existing indexes
+-- Users indexes
 CREATE INDEX idx_users_email ON users(email);
 CREATE INDEX idx_users_role ON users(role);
+
+-- Products indexes
 CREATE INDEX idx_products_category ON products(category_id);
 CREATE INDEX idx_products_created_by ON products(created_by);
+
+-- Orders indexes
 CREATE INDEX idx_orders_user ON orders(user_id);
 CREATE INDEX idx_orders_status ON orders(status);
+CREATE INDEX idx_orders_city ON orders(city);
+CREATE INDEX idx_orders_delivery_method ON orders(delivery_method);
+CREATE INDEX idx_orders_is_large_order ON orders(is_large_order);
+
+-- Order items indexes
 CREATE INDEX idx_order_items_order ON order_items(order_id);
+
+-- Cart items indexes
 CREATE INDEX idx_cart_items_cart ON cart_items(cart_id);
+
+-- Email tokens indexes
 CREATE INDEX idx_email_tokens_user ON email_tokens(user_id);
+
+-- Refresh tokens indexes
 CREATE INDEX idx_refresh_tokens_user ON refresh_tokens(user_id);
 
--- New indexes
+-- Reviews indexes
 CREATE INDEX idx_reviews_product ON reviews(product_id);
 CREATE INDEX idx_reviews_user ON reviews(user_id);
+
+-- Offers indexes
 CREATE INDEX idx_offers_code ON offers(code);
 CREATE INDEX idx_offers_valid ON offers(valid_from, valid_until);
+
+-- Notifications indexes
 CREATE INDEX idx_notifications_user ON notifications(user_id);
 CREATE INDEX idx_notifications_read ON notifications(read);
+
+-- Inventory alerts indexes
 CREATE INDEX idx_inventory_alerts_product ON inventory_alerts(product_id);
+
+-- Support tickets indexes
 CREATE INDEX idx_support_tickets_user ON support_tickets(user_id);
 CREATE INDEX idx_support_tickets_status ON support_tickets(status);
+
+-- Ticket messages indexes
 CREATE INDEX idx_ticket_messages_ticket ON ticket_messages(ticket_id);
+
+-- Shipping addresses indexes
 CREATE INDEX idx_shipping_addresses_user ON shipping_addresses(user_id);
+
+-- Product analytics indexes
 CREATE INDEX idx_product_analytics_product ON product_analytics(product_id);
+
+-- Favorites indexes
 CREATE INDEX idx_favorites_user ON favorites(user_id);
 CREATE INDEX idx_favorites_product ON favorites(product_id);
 
 -- ============================================
--- DEFAULT DATA
+-- COMMENTS
 -- ============================================
 
--- Insert default admin user (password: Admin123!)
--- Note: In production, use proper bcrypt hashing
-INSERT INTO users (name, email, password, role, approved, is_verified)
-VALUES ('Admin', 'admin@smarttech.com', '$2a$10$rQEY7xQvKQ8xQvKQ8xQvKQ8xQvKQ8xQvKQ8xQvKQ8xQvKQ8xQvKQ8x', 'admin', TRUE, TRUE)
-ON CONFLICT (email) DO NOTHING;
-
--- Insert sample categories
-INSERT INTO categories (name_en, name_ar, description_en, description_ar) VALUES
-('Electronics', 'إلكترونيات', 'Latest electronic devices and gadgets', 'أحدث الأجهزة الإلكترونية والإلكترونيات');
-
--- Insert sample products
-INSERT INTO products (name_en, name_ar, description_en, description_ar, price, stock, category_id, created_by, images)
-SELECT 
-    'Smartphone Pro X', 
-    'هاتف ذكي برو X',
-    'Latest flagship smartphone with advanced features',
-    'أحدث هاتفflagship مع ميزات متقدمة',
-    999.99,
-    50,
-    c.id,
-    u.id,
-    ARRAY['/images/phone1.jpg', '/images/phone2.jpg']
-FROM categories c, users u
-WHERE c.name_en = 'Electronics' AND u.role = 'admin'
-LIMIT 1;
-
-INSERT INTO products (name_en, name_ar, description_en, description_ar, price, stock, category_id, created_by, images)
-SELECT 
-    'Laptop UltraBook', 
-    'كمبيوتر محمول ألترابوك',
-    'High-performance laptop for professionals',
-    'كمبيوتر محمول عالي الأداء للمحترفين',
-    1299.99,
-    30,
-    c.id,
-    u.id,
-    ARRAY['/images/laptop1.jpg']
-FROM categories c, users u
-WHERE c.name_en = 'Electronics' AND u.role = 'admin'
-LIMIT 1;
-
--- Insert sample product pricing (quantity-based)
-INSERT INTO product_pricing (product_id, min_quantity, price)
-SELECT p.id, 10, p.price * 0.9
-FROM products p
-WHERE p.price > 0
-LIMIT 5;
-
--- Insert sample shipping areas
-INSERT INTO shipping_areas (name_en, name_ar, price, estimated_days, active) VALUES
-('Ramallah', 'رام الله', 10.00, 1, TRUE),
-('Nablus', 'نابلس', 15.00, 2, TRUE),
-('Hebron', 'الخليل', 20.00, 3, TRUE),
-('Gaza Strip', 'قطاع غزة', 25.00, 4, TRUE),
-('Jerusalem', 'القدس', 12.00, 1, TRUE);
-
--- Grant necessary permissions (adjust as needed for your setup)
--- GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO smarttech_user;
--- GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO smarttech_user;
+COMMENT ON COLUMN orders.city IS 'City selected by the user for delivery or pickup';
+COMMENT ON COLUMN orders.delivery_method IS 'Delivery method: shipping or in-store pickup';
+COMMENT ON COLUMN orders.shipping_cost IS 'Calculated shipping cost based on city and delivery method';
+COMMENT ON COLUMN orders.is_large_order IS 'Flag indicating if order exceeds large order threshold';

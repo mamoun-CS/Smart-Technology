@@ -9,13 +9,15 @@ import { offersAPI } from '@/lib';
 import { getDictionary } from '@/i18n';
 import { formatPrice, formatDate, cn } from '@/lib';
 import { toast } from 'sonner';
-import { Navbar } from '@/components';
+
+
 
 export default function OffersManagement({ params: { locale = 'en' } }) {
   const [offers, setOffers] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editingOffer, setEditingOffer] = useState(null);
+  const [currentTime, setCurrentTime] = useState(null); 
   
   const [formData, setFormData] = useState({
     code: '',
@@ -32,6 +34,20 @@ export default function OffersManagement({ params: { locale = 'en' } }) {
   const router = useRouter();
   const dict = getDictionary(locale);
   const { user, isAuthenticated } = useAuthStore();
+
+  // ✅ Set current time only on client side after hydration
+  useEffect(() => {
+    setCurrentTime(new Date());
+  }, []);
+
+  // ✅ Optional: Update current time periodically for real-time updates
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 60000); // Update every minute
+    
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     if (!isAuthenticated || user?.role !== 'admin') {
@@ -139,9 +155,10 @@ export default function OffersManagement({ params: { locale = 'en' } }) {
     setShowModal(true);
   };
 
+  // ✅ Modified isExpired function to use currentTime state instead of new Date()
   const isExpired = (expiresAt) => {
-    if (!expiresAt) return false;
-    return new Date(expiresAt) < new Date();
+    if (!expiresAt || !currentTime) return false; // Return false if currentTime not set yet
+    return new Date(expiresAt) < currentTime;
   };
 
   const isValid = (offer) => {
@@ -151,10 +168,16 @@ export default function OffersManagement({ params: { locale = 'en' } }) {
     return true;
   };
 
+  // ✅ Helper function to check if offer is expired (for display purposes)
+  const isOfferExpired = (expiresAt) => {
+    if (!expiresAt || !currentTime) return false;
+    return new Date(expiresAt) < currentTime;
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-        <Navbar locale={locale} dict={dict} />
+     
         <div className="pt-24 pb-12">
           <div className="max-w-7xl mx-auto px-4">
             <div className="skeleton h-8 w-48 mb-8" />
@@ -171,7 +194,7 @@ export default function OffersManagement({ params: { locale = 'en' } }) {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <Navbar locale={locale} dict={dict} />
+    
       
       <div className="pt-24 pb-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -286,7 +309,7 @@ export default function OffersManagement({ params: { locale = 'en' } }) {
                   )}
                   <div className="flex justify-between">
                     <span className="text-gray-500">{locale === 'ar' ? 'ينتهي' : 'Expires'}</span>
-                    <span className={cn(isExpired(offer.expires_at) && "text-red-500")}>
+                    <span className={cn(isOfferExpired(offer.expires_at) && "text-red-500")}>
                       {offer.expires_at ? formatDate(offer.expires_at, locale) : (locale === 'ar' ? 'غير محدد' : 'No expiry')}
                     </span>
                   </div>

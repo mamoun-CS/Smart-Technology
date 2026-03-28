@@ -20,12 +20,18 @@ export default function AdminDashboard({ params: { locale = 'en' } }) {
   const [topProducts, setTopProducts] = useState([]);
   const [lowStockProducts, setLowStockProducts] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [currentTime, setCurrentTime] = useState(null); // ✅ Add this state for hydration fix
   const router = useRouter();
   const dict = getDictionary(locale);
   const t = dict?.common || {};
   const adminT = dict?.admin || {};
   
   const { user, isAuthenticated } = useAuthStore();
+
+  // ✅ Set current time only on client side after hydration
+  useEffect(() => {
+    setCurrentTime(new Date());
+  }, []);
 
   useEffect(() => {
     if (!isAuthenticated || user?.role !== 'admin') {
@@ -113,12 +119,12 @@ export default function AdminDashboard({ params: { locale = 'en' } }) {
         </div>
         <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
           <Clock className="w-4 h-4" />
-          <span>{new Date().toLocaleDateString(locale === 'ar' ? 'ar-SA' : 'en-US', { 
+          <span>{currentTime ? currentTime.toLocaleDateString(locale === 'ar' ? 'ar-SA' : 'en-US', { 
             weekday: 'long', 
             year: 'numeric', 
             month: 'long', 
             day: 'numeric' 
-          })}</span>
+          }) : ''}</span>
         </div>
       </div>
 

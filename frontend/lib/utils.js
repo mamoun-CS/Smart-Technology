@@ -21,11 +21,26 @@ export function formatPrice(price, locale = 'en') {
 }
 
 export function formatDate(date, locale = 'en') {
+  // Handle null, undefined, or invalid values
+  if (!date) return '';
+  
+  // Parse the date string and extract date components to avoid timezone issues
+  const dateObj = new Date(date);
+  if (isNaN(dateObj.getTime())) return '';
+  
+  // Use UTC methods to ensure consistent formatting across server and client
+  const year = dateObj.getUTCFullYear();
+  const month = dateObj.getUTCMonth();
+  const day = dateObj.getUTCDate();
+  
+  // Create a new date using UTC components to avoid timezone shifts
+  const utcDate = new Date(Date.UTC(year, month, day));
+  
   return new Intl.DateTimeFormat(locale === 'ar' ? 'ar-SA' : 'en-US', {
     year: 'numeric',
     month: 'long',
     day: 'numeric',
-  }).format(new Date(date));
+  }).format(utcDate);
 }
 
 export function debounce(func, wait) {

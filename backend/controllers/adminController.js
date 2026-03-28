@@ -156,19 +156,19 @@ const adminController = {
       let paramIndex = 1;
 
       if (name !== undefined) {
-        updates.push(`name = ${paramIndex++}`);
+        updates.push(`name = $${paramIndex++}`);
         values.push(name);
       }
       if (email !== undefined) {
-        updates.push(`email = ${paramIndex++}`);
+        updates.push(`email = $${paramIndex++}`);
         values.push(email);
       }
       if (phone !== undefined) {
-        updates.push(`phone = ${paramIndex++}`);
+        updates.push(`phone = $${paramIndex++}`);
         values.push(phone);
       }
       if (role !== undefined) {
-        updates.push(`role = ${paramIndex++}`);
+        updates.push(`role = $${paramIndex++}`);
         values.push(role);
       }
 
@@ -180,7 +180,7 @@ const adminController = {
       }
 
       values.push(id);
-      const query = `UPDATE users SET ${updates.join(', ')} WHERE id = ${paramIndex} RETURNING id, name, email, phone, role, created_at`;
+      const query = `UPDATE users SET ${updates.join(', ')} WHERE id = $${paramIndex} RETURNING id, name, email, phone, role, created_at`;
       
       const result = await db.query(query, values);
 

@@ -3,8 +3,8 @@ import { getDictionary } from '@/i18n';
 import { Toaster } from 'sonner';
 
 export const metadata = {
-  title: 'Smart Technology - Premium E-Commerce',
-  description: 'Shop the latest technology products with premium quality',
+  title: `${process.env.NEXT_PUBLIC_APP_NAME || 'Smart Technology'} - Premium E-Commerce`,
+  description: process.env.NEXT_PUBLIC_APP_DESCRIPTION || 'Shop the latest technology products with premium quality',
   keywords: 'ecommerce, technology, gadgets, electronics',
 };
 

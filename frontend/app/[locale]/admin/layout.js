@@ -30,16 +30,23 @@ export default function AdminLayout({ children, params: { locale = 'en' } }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [mounted, setMounted] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
   const dict = getDictionary(locale);
-  const { user, isAuthenticated, logout } = useAuthStore();
+  const { user, isAuthenticated, logout, initialize } = useAuthStore();
+
+  // Handle client-side mounting and auth initialization
+  useEffect(() => {
+    setMounted(true);
+    initialize();
+  }, [initialize]);
 
   useEffect(() => {
-    if (!isAuthenticated || user?.role !== 'admin') {
+    if (mounted && (!isAuthenticated || user?.role !== 'admin')) {
       router.push(`/${locale}/login`);
     }
-  }, [isAuthenticated, user, router, locale]);
+  }, [mounted, isAuthenticated, user, router, locale]);
 
   const handleLogout = () => {
     logout();
@@ -53,6 +60,15 @@ export default function AdminLayout({ children, params: { locale = 'en' } }) {
     }
     return pathname.startsWith(`/${locale}${href}`);
   };
+
+  // Show loading state during hydration to prevent mismatch
+  if (!mounted) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+        <div className="animate-spin rounded-full h-12 w-12 border-4 border-gray-200 border-t-brand-red"></div>
+      </div>
+    );
+  }
 
   if (!isAuthenticated || user?.role !== 'admin') {
     return null;

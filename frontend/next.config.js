@@ -2,14 +2,15 @@
 const nextConfig = {
   reactStrictMode: true,
   images: {
-    domains: ['localhost', 'res.cloudinary.com', 'images.unsplash.com'],
+    domains: process.env.NEXT_PUBLIC_IMAGE_DOMAINS?.split(',') || ['localhost', 'res.cloudinary.com', 'images.unsplash.com'],
     unoptimized: true,
   },
   async rewrites() {
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
     return [
       {
         source: '/api/:path*',
-        destination: 'http://localhost:5000/api/:path*',
+        destination: `${apiUrl}/:path*`,
       },
     ];
   },

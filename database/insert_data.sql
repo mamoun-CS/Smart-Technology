@@ -1,12 +1,19 @@
--- ============================================
--- FIXED TEST DATA FOR SMART TECHNOLOGY E-COMMERCE PLATFORM
--- ============================================
+-- Smart Technology E-Commerce Platform - Data Insertion
+-- PostgreSQL Raw SQL
 
 -- ============================================
--- 1. USERS (Various roles)
+-- 1. DEFAULT ADMIN USER
 -- ============================================
 
--- Admin user (already exists from schema)
+-- Insert default admin user (password: Admin123!)
+INSERT INTO users (name, email, password, role, approved, is_verified)
+VALUES ('Admin', 'admin@smarttech.com', '$2a$10$rQEY7xQvKQ8xQvKQ8xQvKQ8xQvKQ8xQvKQ8xQvKQ8xQvKQ8xQvKQ8x', 'admin', TRUE, TRUE)
+ON CONFLICT (email) DO NOTHING;
+
+-- ============================================
+-- 2. USERS (Various roles)
+-- ============================================
+
 -- Additional admin users
 INSERT INTO users (name, email, password, role, approved, is_verified, phone, last_login) VALUES
 ('Super Admin', 'superadmin@smarttech.com', '$2a$10$rQEY7xQvKQ8xQvKQ8xQvKQ8xQvKQ8xQvKQ8xQvKQ8xQvKQ8xQvKQ8x', 'admin', TRUE, TRUE, '+970599000000', CURRENT_TIMESTAMP),
@@ -32,7 +39,7 @@ INSERT INTO users (name, email, password, role, approved, is_verified, phone, ph
 ('Dina Hassan', 'dina@example.com', '$2a$10$rQEY7xQvKQ8xQvKQ8xQvKQ8xQvKQ8xQvKQ8xQvKQ8xQvKQ8xQvKQ8x', 'customer', FALSE, TRUE, '+970599222118', FALSE, NULL, NULL, 'https://ui-avatars.com/api/?name=Dina+Hassan');
 
 -- ============================================
--- 2. CATEGORIES (More categories)
+-- 3. CATEGORIES
 -- ============================================
 
 INSERT INTO categories (name_en, name_ar, description_en, description_ar, image) VALUES
@@ -46,10 +53,10 @@ INSERT INTO categories (name_en, name_ar, description_en, description_ar, image)
 ('Smart Home', 'منزل ذكي', 'Smart home devices and automation', 'أجهزة منزلية ذكية وأتمتة', '/images/categories/smarthome.jpg');
 
 -- ============================================
--- 3. PRODUCTS (Comprehensive products with unique names)
+-- 4. PRODUCTS
 -- ============================================
 
--- Smartphones (unique names)
+-- Smartphones
 INSERT INTO products (name_en, name_ar, description_en, description_ar, price, stock, unit_price, wholesale_price, min_order_quantity, barcode, warehouse_location, category_id, created_by, images) VALUES
 ('iPhone 15 Pro Max', 'آيفون 15 برو ماكس', 'Apple''s latest flagship with titanium design', 'أحدث هاتف من أبل بتصميم التيتانيوم', 1299.99, 100, 1299.99, 1150.00, 1, 'ABC123456789', 'A-1-01', (SELECT id FROM categories WHERE name_en = 'Smartphones' LIMIT 1), (SELECT id FROM users WHERE email = 'apple@smarttech.com' LIMIT 1), ARRAY['/images/iphone15_1.jpg', '/images/iphone15_2.jpg']),
 ('Samsung Galaxy S24 Ultra', 'سامسونج جالكسي إس 24 ألترا', 'Premium Android experience with AI features', 'تجربة أندرويد فاخرة مع ميزات الذكاء الاصطناعي', 1199.99, 150, 1199.99, 1050.00, 1, 'DEF987654321', 'B-1-02', (SELECT id FROM categories WHERE name_en = 'Smartphones' LIMIT 1), (SELECT id FROM users WHERE email = 'samsung@smarttech.com' LIMIT 1), ARRAY['/images/s24ultra_1.jpg', '/images/s24ultra_2.jpg']),
@@ -57,7 +64,7 @@ INSERT INTO products (name_en, name_ar, description_en, description_ar, price, s
 ('Xiaomi 14 Ultra', 'شاومي 14 ألترا', 'Flagship killer with Leica camera', 'قاتل العلامات الفاخرة بكاميرا لايكا', 899.99, 200, 899.99, 800.00, 1, 'JKL789456123', 'D-1-04', (SELECT id FROM categories WHERE name_en = 'Smartphones' LIMIT 1), (SELECT id FROM users WHERE email = 'xiaomi@smarttech.com' LIMIT 1), ARRAY['/images/xiaomi14_1.jpg', '/images/xiaomi14_2.jpg']),
 ('OnePlus 12', 'ون بلس 12', 'Fast and smooth performance', 'أداء سريع وسلس', 799.99, 120, 799.99, 700.00, 1, 'MNO321654987', 'E-1-05', (SELECT id FROM categories WHERE name_en = 'Smartphones' LIMIT 1), (SELECT id FROM users WHERE email = 'samsung@smarttech.com' LIMIT 1), ARRAY['/images/oneplus12_1.jpg']);
 
--- Laptops (unique names)
+-- Laptops
 INSERT INTO products (name_en, name_ar, description_en, description_ar, price, stock, unit_price, wholesale_price, min_order_quantity, barcode, warehouse_location, category_id, created_by, images) VALUES
 ('MacBook Pro 16 M3 Max', 'ماك بوك برو 16 M3 ماكس', 'Ultimate power for professionals', 'أقصى قوة للمحترفين', 3499.99, 50, 3499.99, 3200.00, 1, 'ABC111222333', 'A-2-01', (SELECT id FROM categories WHERE name_en = 'Laptops' LIMIT 1), (SELECT id FROM users WHERE email = 'apple@smarttech.com' LIMIT 1), ARRAY['/images/macbook16_1.jpg', '/images/macbook16_2.jpg']),
 ('Dell XPS 15', 'ديل إكس بي إس 15', 'Premium ultrabook with infinity display', 'كمبيوتر محمول فاخر بشاشة لانهائية', 1999.99, 75, 1999.99, 1750.00, 1, 'DEF222333444', 'B-2-02', (SELECT id FROM categories WHERE name_en = 'Laptops' LIMIT 1), (SELECT id FROM users WHERE email = 'dell@smarttech.com' LIMIT 1), ARRAY['/images/xps15_1.jpg']),
@@ -82,7 +89,7 @@ INSERT INTO products (name_en, name_ar, description_en, description_ar, price, s
 ('Phone Case Clear', 'غطاء شفاف للهاتف', 'Protective transparent case', 'غطاء واقي شفاف', 19.99, 1000, 19.99, 15.00, 10, 'GHI555666777', 'C-5-03', (SELECT id FROM categories WHERE name_en = 'Accessories' LIMIT 1), (SELECT id FROM users WHERE email = 'xiaomi@smarttech.com' LIMIT 1), ARRAY['/images/phonecase_1.jpg']);
 
 -- ============================================
--- 4. PRODUCT PRICING (Quantity-based)
+-- 5. PRODUCT PRICING (Quantity-based)
 -- ============================================
 
 INSERT INTO product_pricing (product_id, min_quantity, price) VALUES
@@ -97,10 +104,28 @@ INSERT INTO product_pricing (product_id, min_quantity, price) VALUES
 ((SELECT id FROM products WHERE name_en = 'Sony WH-1000XM5' LIMIT 1), 25, 300.00);
 
 -- ============================================
--- 5. ORDERS (With different statuses)
+-- 6. SHIPPING AREAS
 -- ============================================
 
--- Store order IDs in variables using WITH clause for better accuracy
+INSERT INTO shipping_areas (name_en, name_ar, price, estimated_days, active) VALUES
+('Ramallah', 'رام الله', 10.00, 1, TRUE),
+('Nablus', 'نابلس', 15.00, 2, TRUE),
+('Hebron', 'الخليل', 20.00, 3, TRUE),
+('Gaza Strip', 'قطاع غزة', 25.00, 4, TRUE),
+('Jerusalem', 'القدس', 12.00, 1, TRUE);
+
+-- ============================================
+-- 7. SYSTEM CONFIGURATION
+-- ============================================
+
+INSERT INTO system_config (config_key, config_value, description) 
+VALUES ('large_order_threshold', '50', 'Minimum total quantity for large orders requiring manual review')
+ON CONFLICT (config_key) DO NOTHING;
+
+-- ============================================
+-- 8. ORDERS
+-- ============================================
+
 WITH user_data AS (
   SELECT id, email FROM users
 ),
@@ -161,7 +186,7 @@ order9 AS (
 SELECT 1;
 
 -- ============================================
--- 6. ORDER ITEMS
+-- 9. ORDER ITEMS
 -- ============================================
 
 -- Order 1 items
@@ -262,7 +287,7 @@ WHERE o.shipping_address = 'Jerusalem, Beit Hanina, Al-Quds Street'
 LIMIT 1;
 
 -- ============================================
--- 7. CART & CART ITEMS
+-- 10. CART & CART ITEMS
 -- ============================================
 
 INSERT INTO cart (user_id)
@@ -312,7 +337,7 @@ WHERE c.user_id = (SELECT id FROM users WHERE email = 'sara@example.com')
 LIMIT 1;
 
 -- ============================================
--- 8. REVIEWS
+-- 11. REVIEWS
 -- ============================================
 
 INSERT INTO reviews (product_id, user_id, rating, comment, created_at)
@@ -358,7 +383,7 @@ WHERE p.name_en = 'AirPods Pro 2' AND u.email = 'dina@example.com'
 LIMIT 1;
 
 -- ============================================
--- 9. OFFERS (Discount codes)
+-- 12. OFFERS (Discount codes)
 -- ============================================
 
 INSERT INTO offers (code, discount_type, discount_value, target_role, valid_from, valid_until, usage_limit, used_count, created_by)
@@ -386,7 +411,7 @@ SELECT 'NEWYEAR2024', 'percentage', 15.00, 'all', '2024-01-01 00:00:00', '2024-0
 FROM users WHERE email = 'admin@smarttech.com' LIMIT 1;
 
 -- ============================================
--- 10. SHIPPING ADDRESSES
+-- 13. SHIPPING ADDRESSES
 -- ============================================
 
 INSERT INTO shipping_addresses (user_id, address, city, phone, is_default, created_at)
@@ -414,7 +439,7 @@ SELECT id, 'Al-Rimal, Omar Al-Mukhtar Street', 'Gaza', '+970599222116', TRUE, CU
 FROM users WHERE email = 'nadia@example.com' LIMIT 1;
 
 -- ============================================
--- 11. NOTIFICATIONS
+-- 14. NOTIFICATIONS
 -- ============================================
 
 INSERT INTO notifications (user_id, type, title, message, read, created_at)
@@ -442,7 +467,7 @@ SELECT id, 'order', 'Order Cancelled', 'Your order has been cancelled', TRUE, '2
 FROM users WHERE email = 'youssef@example.com' LIMIT 1;
 
 -- ============================================
--- 12. INVENTORY ALERTS
+-- 15. INVENTORY ALERTS
 -- ============================================
 
 INSERT INTO inventory_alerts (product_id, threshold, alert_sent)
@@ -458,10 +483,9 @@ INSERT INTO inventory_alerts (product_id, threshold, alert_sent)
 SELECT id, 25, FALSE FROM products WHERE name_en = 'Dell XPS 15' LIMIT 1;
 
 -- ============================================
--- 13. SUPPORT TICKETS
+-- 16. SUPPORT TICKETS
 -- ============================================
 
--- Insert tickets with RETURNING to get IDs for messages
 WITH ticket1 AS (
   INSERT INTO support_tickets (user_id, subject, description, status, priority, created_at, updated_at)
   SELECT id, 'Damaged product received', 'I received my iPhone with a scratch on the screen', 'in_progress', 'high', '2024-01-19 09:00:00', '2024-01-19 14:30:00'
@@ -495,126 +519,29 @@ ticket5 AS (
 SELECT 1;
 
 -- ============================================
--- 14. TICKET MESSAGES
+-- 17. TICKET MESSAGES
 -- ============================================
 
--- Ticket 1 messages
 INSERT INTO ticket_messages (ticket_id, user_id, message, is_admin_reply, created_at)
-SELECT t.id, u.id, 'Hello, I just opened my package and noticed a scratch on the screen. Please help!', FALSE, '2024-01-19 09:05:00'
-FROM support_tickets t, users u
-WHERE t.subject = 'Damaged product received' AND u.email = 'ahmed@example.com'
+SELECT st.id, u.id, 'We apologize for the inconvenience. We will send a replacement immediately.', TRUE, '2024-01-19 15:00:00'
+FROM support_tickets st, users u
+WHERE st.subject = 'Damaged product received' AND u.role = 'admin'
 LIMIT 1;
 
 INSERT INTO ticket_messages (ticket_id, user_id, message, is_admin_reply, created_at)
-SELECT t.id, u.id, 'We apologize for the inconvenience. Please send us photos of the damage and we will arrange a replacement.', TRUE, '2024-01-19 10:30:00'
-FROM support_tickets t, users u
-WHERE t.subject = 'Damaged product received' AND u.email = 'admin@smarttech.com'
+SELECT st.id, u.id, 'Thank you for the quick response!', FALSE, '2024-01-19 16:30:00'
+FROM support_tickets st, users u
+WHERE st.subject = 'Damaged product received' AND u.email = 'ahmed@example.com'
 LIMIT 1;
 
 INSERT INTO ticket_messages (ticket_id, user_id, message, is_admin_reply, created_at)
-SELECT t.id, u.id, 'Thank you for the quick response. I have attached photos.', FALSE, '2024-01-19 11:15:00'
-FROM support_tickets t, users u
-WHERE t.subject = 'Damaged product received' AND u.email = 'ahmed@example.com'
-LIMIT 1;
-
--- Ticket 3 messages
-INSERT INTO ticket_messages (ticket_id, user_id, message, is_admin_reply, created_at)
-SELECT t.id, u.id, 'I ordered a silver laptop but received a space gray one.', FALSE, '2024-02-03 16:00:00'
-FROM support_tickets t, users u
-WHERE t.subject = 'Wrong item shipped' AND u.email = 'sara@example.com'
+SELECT st.id, u.id, 'Your order is expected to arrive within 2 business days.', TRUE, '2024-01-23 14:00:00'
+FROM support_tickets st, users u
+WHERE st.subject = 'Shipping delay' AND u.role = 'admin'
 LIMIT 1;
 
 INSERT INTO ticket_messages (ticket_id, user_id, message, is_admin_reply, created_at)
-SELECT t.id, u.id, 'We apologize for this error. A return label has been sent to your email.', TRUE, '2024-02-04 09:30:00'
-FROM support_tickets t, users u
-WHERE t.subject = 'Wrong item shipped' AND u.email = 'admin@smarttech.com'
+SELECT st.id, u.id, 'We have shipped the correct item and arranged for pickup of the wrong one.', TRUE, '2024-02-03 16:00:00'
+FROM support_tickets st, users u
+WHERE st.subject = 'Wrong item shipped' AND u.role = 'admin'
 LIMIT 1;
-
--- ============================================
--- 15. PRODUCT ANALYTICS
--- ============================================
-
-INSERT INTO product_analytics (product_id, view_count, last_viewed) VALUES
-((SELECT id FROM products WHERE name_en = 'iPhone 15 Pro Max' LIMIT 1), 1250, CURRENT_TIMESTAMP),
-((SELECT id FROM products WHERE name_en = 'Samsung Galaxy S24 Ultra' LIMIT 1), 980, CURRENT_TIMESTAMP),
-((SELECT id FROM products WHERE name_en = 'MacBook Pro 16 M3 Max' LIMIT 1), 750, CURRENT_TIMESTAMP),
-((SELECT id FROM products WHERE name_en = 'Sony WH-1000XM5' LIMIT 1), 520, CURRENT_TIMESTAMP),
-((SELECT id FROM products WHERE name_en = 'Apple Watch Ultra 2' LIMIT 1), 430, CURRENT_TIMESTAMP),
-((SELECT id FROM products WHERE name_en = 'AirPods Pro 2' LIMIT 1), 890, CURRENT_TIMESTAMP),
-((SELECT id FROM products WHERE name_en = 'Dell XPS 15' LIMIT 1), 340, CURRENT_TIMESTAMP)
-ON CONFLICT (product_id) DO NOTHING;
-
--- ============================================
--- 16. EMAIL TOKENS
--- ============================================
-
-INSERT INTO email_tokens (user_id, token, type, expires_at, created_at)
-SELECT id, 'abc123def456ver', 'verification', CURRENT_TIMESTAMP + INTERVAL '24 hours', CURRENT_TIMESTAMP
-FROM users WHERE email = 'mohammed@example.com' LIMIT 1;
-
-INSERT INTO email_tokens (user_id, token, type, expires_at, created_at)
-SELECT id, 'def456ghi789ver', 'verification', CURRENT_TIMESTAMP + INTERVAL '24 hours', CURRENT_TIMESTAMP
-FROM users WHERE email = 'dina@example.com' LIMIT 1;
-
-INSERT INTO email_tokens (user_id, token, type, expires_at, created_at)
-SELECT id, 'ghi789jkl012reset', 'password_reset', CURRENT_TIMESTAMP + INTERVAL '1 hour', CURRENT_TIMESTAMP
-FROM users WHERE email = 'youssef@example.com' LIMIT 1;
-
-INSERT INTO email_tokens (user_id, token, type, expires_at, created_at)
-SELECT id, 'jkl012mno345ver', 'verification', CURRENT_TIMESTAMP - INTERVAL '2 days', CURRENT_TIMESTAMP - INTERVAL '3 days'
-FROM users WHERE email = 'ahmed@example.com' LIMIT 1;
-
--- ============================================
--- 17. REFRESH TOKENS
--- ============================================
-
-INSERT INTO refresh_tokens (user_id, token, expires_at, created_at)
-SELECT id, 'refresh_token_ahmed_123456', CURRENT_TIMESTAMP + INTERVAL '7 days', CURRENT_TIMESTAMP
-FROM users WHERE email = 'ahmed@example.com' LIMIT 1;
-
-INSERT INTO refresh_tokens (user_id, token, expires_at, created_at)
-SELECT id, 'refresh_token_layla_789012', CURRENT_TIMESTAMP + INTERVAL '7 days', CURRENT_TIMESTAMP
-FROM users WHERE email = 'layla@example.com' LIMIT 1;
-
-INSERT INTO refresh_tokens (user_id, token, expires_at, created_at)
-SELECT id, 'refresh_token_admin_345678', CURRENT_TIMESTAMP + INTERVAL '7 days', CURRENT_TIMESTAMP
-FROM users WHERE email = 'admin@smarttech.com' LIMIT 1;
-
--- ============================================
--- 18. ADDITIONAL SHIPPING AREAS
--- ============================================
-
-INSERT INTO shipping_areas (name_en, name_ar, price, estimated_days, active) VALUES
-('Tulkarm', 'طولكرم', 15.00, 2, TRUE),
-('Jenin', 'جنين', 15.00, 2, TRUE),
-('Qalqilya', 'قلقيلية', 15.00, 2, TRUE),
-('Salfit', 'سلفيت', 15.00, 2, TRUE),
-('Bethlehem', 'بيت لحم', 12.00, 1, TRUE),
-('Jericho', 'أريحا', 12.00, 1, TRUE);
-
--- ============================================
--- 19. UPDATE ANALYTICS WITH HISTORICAL DATA
--- ============================================
-
-UPDATE product_analytics 
-SET view_count = view_count + 500, last_viewed = CURRENT_TIMESTAMP - INTERVAL '5 days'
-WHERE product_id = (SELECT id FROM products WHERE name_en = 'iPhone 15 Pro Max' LIMIT 1);
-
-UPDATE product_analytics 
-SET view_count = view_count + 300, last_viewed = CURRENT_TIMESTAMP - INTERVAL '3 days'
-WHERE product_id = (SELECT id FROM products WHERE name_en = 'Samsung Galaxy S24 Ultra' LIMIT 1);
-
--- ============================================
--- 20. VERIFICATION QUERIES
--- ============================================
-
--- Check data counts
-SELECT 'Total Users: ' || COUNT(*) as Info FROM users
-UNION ALL
-SELECT 'Total Products: ' || COUNT(*) FROM products
-UNION ALL
-SELECT 'Total Orders: ' || COUNT(*) FROM orders
-UNION ALL
-SELECT 'Total Reviews: ' || COUNT(*) FROM reviews
-UNION ALL
-SELECT 'Total Sales Value: ' || COALESCE(SUM(total_price)::text, '0') FROM orders WHERE status = 'delivered';

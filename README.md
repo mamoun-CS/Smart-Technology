@@ -211,8 +211,7 @@ Smart technology/
 │   └── server.js          # Entry point
 ├── database/
 │   ├── schema.sql         # Database schema
-│   ├── insertdata.sql     # Sample data
-│   └── migration_shipping_location.sql
+│   └── insertdata.sql     # Sample data
 ├── frontend/
 │   ├── app/[locale]/      # Next.js pages with i18n
 │   │   ├── about/         # About page
@@ -328,7 +327,7 @@ CLIENT_URL=http://localhost:3000
 # Create database and run schema
 psql -U postgres -f ../database/schema.sql
 
-# Optionally insert sample data
+# Insert sample data
 psql -U postgres -d smart_tech -f ../database/insertdata.sql
 ```
 

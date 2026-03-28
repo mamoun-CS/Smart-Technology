@@ -2,11 +2,12 @@
 
 import Link from 'next/link';
 import { Mail, Phone, MapPin, Facebook, Twitter, Instagram, Youtube, Send } from '@/components/icons';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { cn, getDirection } from '@/lib';
 
 export default function Footer({ locale = 'en', dict = {} }) {
   const [email, setEmail] = useState('');
+  const [currentYear, setCurrentYear] = useState(null);
   const direction = getDirection(locale);
   const isRTL = direction === 'rtl';
   
@@ -14,7 +15,10 @@ export default function Footer({ locale = 'en', dict = {} }) {
   const homeT = dict?.home || {};
   const navT = dict?.nav || {};
   
-  const currentYear = new Date().getFullYear();
+  // Set current year only on client side after hydration
+  useEffect(() => {
+    setCurrentYear(new Date().getFullYear());
+  }, []);
 
   const quickLinks = [
     { href: `/${locale}/products`, label: navT.products },
@@ -157,8 +161,8 @@ export default function Footer({ locale = 'en', dict = {} }) {
               </li>
               <li className="flex items-center gap-3">
                 <Mail className="w-5 h-5 text-brand-red shrink-0" />
-                <a href="mailto:info@smarttech.com" className="text-gray-400 hover:text-brand-red transition-colors">
-                  info@smarttech.com
+                <a href={`mailto:${process.env.NEXT_PUBLIC_APP_EMAIL || 'info@smarttech.com'}`} className="text-gray-400 hover:text-brand-red transition-colors">
+                  {process.env.NEXT_PUBLIC_APP_EMAIL || 'info@smarttech.com'}
                 </a>
               </li>
             </ul>
@@ -171,7 +175,7 @@ export default function Footer({ locale = 'en', dict = {} }) {
         <div className="container-custom py-6">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <p className="text-gray-400 text-sm">
-              © {currentYear} {navT.brandName || 'Smart Technology'}. {commonT.allRights || 'All rights reserved.'}
+              © {currentYear || ''} {navT.brandName || 'Smart Technology'}. {commonT.allRights || 'All rights reserved.'}
             </p>
             <div className="flex items-center gap-6">
               <Link href={`/${locale}/privacy`} className="text-gray-400 text-sm hover:text-brand-red transition-colors">
