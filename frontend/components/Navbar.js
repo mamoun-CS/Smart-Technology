@@ -14,11 +14,12 @@ export default function Navbar({ locale = 'en', dict = {} }) {
   const [isScrolled, setIsScrolled] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
   
-  // Use _hasHydrated from auth store to wait for localStorage rehydration
-  const { user, isAuthenticated, logout, initialize, _hasHydrated } = useAuthStore();
+  // Use local mounted state to prevent hydration mismatch for auth UI
+  const { user, isAuthenticated, logout, initialize } = useAuthStore();
   const { items, fetchCart } = useCartStore();
   const { notifications, unreadCount, fetchNotifications, markAsRead, markAllAsRead } = useNotificationStore();
 
@@ -28,6 +29,7 @@ export default function Navbar({ locale = 'en', dict = {} }) {
 
   // Initialize auth state on mount
   useEffect(() => {
+    setMounted(true);
     initialize();
   }, [initialize]);
 
@@ -68,7 +70,7 @@ export default function Navbar({ locale = 'en', dict = {} }) {
   return (
     <nav className={cn(
       'fixed top-0 left-0 right-0 z-50 transition-all duration-300',
-      _hasHydrated && isScrolled 
+      mounted && isScrolled 
         ? 'bg-white/95 dark:bg-gray-900/95 backdrop-blur-md shadow-sm' 
         : 'bg-transparent'
     )}>
@@ -87,7 +89,7 @@ export default function Navbar({ locale = 'en', dict = {} }) {
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-8">
             {/* Show login/register buttons only after hydration to prevent hydration mismatch */}
-            {!_hasHydrated || !isAuthenticated ? (
+            {!mounted || !isAuthenticated ? (
               <>
                 <Link 
                   href={`/${locale}`} 
@@ -164,7 +166,7 @@ export default function Navbar({ locale = 'en', dict = {} }) {
             </Link>
 
             {/* Notifications */}
-            {_hasHydrated && isAuthenticated && (
+            {mounted && isAuthenticated && (
               <div className="relative">
                 <button 
                   onClick={() => setShowNotifications(!showNotifications)}
@@ -251,7 +253,7 @@ export default function Navbar({ locale = 'en', dict = {} }) {
               className="relative p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
             >
               <ShoppingCart className="w-5 h-5 text-gray-600 dark:text-gray-300" />
-              {_hasHydrated && cartItemCount > 0 && (
+              {mounted && cartItemCount > 0 && (
                 <span className="absolute -top-1 -right-1 w-5 h-5 bg-primary-600 text-white text-xs rounded-full flex items-center justify-center">
                   {cartItemCount}
                 </span>
@@ -259,7 +261,7 @@ export default function Navbar({ locale = 'en', dict = {} }) {
             </Link>
 
             {/* User Menu */}
-            {_hasHydrated && isAuthenticated ? (
+            {mounted && isAuthenticated ? (
               <div className="relative group">
                 <button className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
                   <User className="w-5 h-5 text-gray-600 dark:text-gray-300" />
@@ -351,7 +353,7 @@ export default function Navbar({ locale = 'en', dict = {} }) {
           <div className="md:hidden py-4 border-t border-gray-200 dark:border-gray-700 animate-fadeIn">
             <div className="flex flex-col gap-4">
               {/* Show login/register buttons only after hydration to prevent hydration mismatch */}
-              {!_hasHydrated || !isAuthenticated ? (
+              {!mounted || !isAuthenticated ? (
                 <>
                   <Link 
                     href={`/${locale}`}

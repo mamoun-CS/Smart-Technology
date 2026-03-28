@@ -17,12 +17,8 @@ export default function RootLayout({ children, params: { locale = 'en' } }) {
   const direction = locale === 'ar' ? 'rtl' : 'ltr';
 
   return (
-    <html lang={locale} dir={direction}>
-      <head>
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <link rel="icon" href="/favicon.ico" />
-      </head>
-      <body className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <html lang={locale} dir={direction} suppressHydrationWarning>
+      <body className="min-h-screen bg-gray-50 dark:bg-gray-900" suppressHydrationWarning>
         <Toaster 
           position={locale === 'ar' ? 'top-left' : 'top-right'}
           richColors

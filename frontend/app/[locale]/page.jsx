@@ -102,13 +102,13 @@ export default function HomePage({ params: { locale = 'en' } }) {
               
               <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
                 <Link href={`/${locale}/products`}>
-                  <Button size="lg" className="w-full sm:w-auto">
+                  <Button as="span" size="lg" className="w-full sm:w-auto">
                     {productsT.shop || 'Shop Now'}
                     <ArrowRight className="w-5 h-5" />
                   </Button>
                 </Link>
                 <Link href={`/${locale}/register`}>
-                  <Button variant="secondary" size="lg" className="w-full sm:w-auto">
+                  <Button as="span" variant="secondary" size="lg" className="w-full sm:w-auto">
                     {t.register}
                   </Button>
                 </Link>
@@ -295,12 +295,12 @@ export default function HomePage({ params: { locale = 'en' } }) {
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Link href={`/${locale}/register`}>
-                  <Button variant="secondary" size="lg" className="!text-dark-900 !bg-white !border-white hover:!bg-gray-100">
+                  <Button as="span" variant="secondary" size="lg" className="!text-dark-900 !bg-white !border-white hover:!bg-gray-100">
                     {t.register}
                   </Button>
                 </Link>
                 <Link href={`/${locale}/products`}>
-                  <Button variant="outline" size="lg" className="!text-white !border-white hover:!bg-white/10">
+                  <Button as="span" variant="outline" size="lg" className="!text-white !border-white hover:!bg-white/10">
                     {productsT.shop || 'Browse Products'}
                   </Button>
                 </Link>

@@ -270,19 +270,20 @@ const productModel = {
   },
 
   // Create category
-  async createCategory(name_en, name_ar, description_en, description_ar, image) {
+  async createCategory(data) {
+    const { name_en, name_ar, description_en, description_ar, image_url } = data;
     const query = `
       INSERT INTO categories (name_en, name_ar, description_en, description_ar, image)
       VALUES ($1, $2, $3, $4, $5)
       RETURNING *
     `;
-    const result = await pool.query(query, [name_en, name_ar, description_en, description_ar, image]);
+    const result = await pool.query(query, [name_en, name_ar, description_en, description_ar, image_url]);
     return result.rows[0];
   },
 
   // Update category
   async updateCategory(id, data) {
-    const { name_en, name_ar, description_en, description_ar, image } = data;
+    const { name_en, name_ar, description_en, description_ar, image_url } = data;
     const query = `
       UPDATE categories SET
         name_en = COALESCE($1, name_en),
@@ -293,7 +294,7 @@ const productModel = {
       WHERE id = $6
       RETURNING *
     `;
-    const result = await pool.query(query, [name_en, name_ar, description_en, description_ar, image, id]);
+    const result = await pool.query(query, [name_en, name_ar, description_en, description_ar, image_url, id]);
     return result.rows[0];
   },
 

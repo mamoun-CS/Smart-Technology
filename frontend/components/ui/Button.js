@@ -13,6 +13,7 @@ const Button = forwardRef(({
   icon: Icon,
   iconPosition = 'left',
   fullWidth,
+  as: Component = 'button',
   ...props
 }, ref) => {
   const variants = {
@@ -30,7 +31,7 @@ const Button = forwardRef(({
   };
 
   return (
-    <button
+    <Component
       ref={ref}
       className={cn(
         'btn',
@@ -55,7 +56,7 @@ const Button = forwardRef(({
           {Icon && iconPosition === 'right' && <Icon className="w-5 h-5" />}
         </>
       )}
-    </button>
+    </Component>
   );
 });
 

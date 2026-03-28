@@ -303,14 +303,14 @@ const productController = {
         });
       }
 
-      const { name_en, name_ar, description_en, description_ar, image } = req.body;
+      const { name_en, name_ar, description_en, description_ar, image_url } = req.body;
       
       const category = await productModel.createCategory({
         name_en,
         name_ar,
         description_en,
         description_ar,
-        image
+        image_url
       });
 
       res.status(201).json({
@@ -331,14 +331,14 @@ const productController = {
   async updateCategory(req, res) {
     try {
       const { id } = req.params;
-      const { name_en, name_ar, description_en, description_ar, image } = req.body;
+      const { name_en, name_ar, description_en, description_ar, image_url } = req.body;
 
       const category = await productModel.updateCategory(id, {
         name_en,
         name_ar,
         description_en,
         description_ar,
-        image
+        image_url
       });
 
       if (!category) {
