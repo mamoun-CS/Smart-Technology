@@ -81,6 +81,15 @@ A full-stack e-commerce web application built with Node.js/Express backend and N
   - Dynamic sitemap generation
   - Meta tags optimization
 
+- **Additional Features**
+  - Favorites/Wishlist management
+  - Product reviews and ratings
+  - Shipping zones and cost management
+  - Support ticket system
+  - User profile management
+  - Offers and promotions system
+  - Analytics and reporting
+
 ### Frontend Features
 
 - **Multi-language Support**
@@ -90,22 +99,34 @@ A full-stack e-commerce web application built with Node.js/Express backend and N
 - **Pages**
   - Home page with featured products
   - Product listing with filtering and sorting
+  - Product detail pages
   - Shopping cart
+  - Checkout process
   - User authentication (login/register)
   - Email verification page
+  - Password reset pages
   - Order history
+  - Order detail pages
   - Trader dashboard
   - Admin dashboard
+  - User profile
+  - Favorites/Wishlist
+  - Offers page
+  - About page
+  - Contact page
+  - Support page
 
 - **State Management**
   - Auth store (Zustand)
   - Cart store (Zustand)
+  - Notification store (Zustand)
 
 - **UI/UX**
   - Tailwind CSS styling
   - Responsive design
   - Dark mode support
   - Toast notifications
+  - Reusable UI components (Button, Card, Input, Badge, Loading, Tooltip, ProductCard, Footer, Navbar)
 
 ## 🛠️ Tech Stack
 
@@ -117,6 +138,7 @@ A full-stack e-commerce web application built with Node.js/Express backend and N
 - Bcrypt for password hashing
 - NodeMailer for emails
 - Socket.io for real-time features
+- Passport.js for OAuth
 
 ### Frontend
 - Next.js 14 (App Router)
@@ -134,61 +156,133 @@ Smart technology/
 ├── backend/
 │   ├── controllers/       # Request handlers
 │   │   ├── adminController.js
+│   │   ├── analyticsController.js
 │   │   ├── authController.js
 │   │   ├── cartController.js
+│   │   ├── favoriteController.js
+│   │   ├── notificationController.js
+│   │   ├── offerController.js
 │   │   ├── orderController.js
-│   │   └── productController.js
+│   │   ├── productController.js
+│   │   ├── profileController.js
+│   │   ├── reviewController.js
+│   │   ├── shippingController.js
+│   │   ├── sitemapController.js
+│   │   ├── socketController.js
+│   │   └── ticketController.js
 │   ├── middleware/         # Auth & RBAC middleware
 │   │   ├── auth.js
 │   │   └── rbac.js
 │   ├── models/            # Database models
+│   │   ├── analyticsModel.js
 │   │   ├── cartModel.js
 │   │   ├── db.js
+│   │   ├── favoriteModel.js
+│   │   ├── notificationModel.js
+│   │   ├── offerModel.js
 │   │   ├── orderModel.js
 │   │   ├── productModel.js
+│   │   ├── reviewModel.js
+│   │   ├── shippingModel.js
+│   │   ├── ticketModel.js
 │   │   ├── tokenModel.js
 │   │   └── userModel.js
 │   ├── routes/            # API routes
 │   │   ├── admin.js
+│   │   ├── analytics.js
 │   │   ├── auth.js
 │   │   ├── cart.js
+│   │   ├── favorites.js
+│   │   ├── notifications.js
+│   │   ├── offers.js
 │   │   ├── orders.js
-│   │   └── products.js
+│   │   ├── products.js
+│   │   ├── profile.js
+│   │   ├── reviews.js
+│   │   ├── shipping.js
+│   │   └── tickets.js
 │   ├── utils/             # Utilities
 │   │   ├── email.js
 │   │   ├── jwt.js
-│   │   └── passport.js
+│   │   ├── passport.js
+│   │   └── socket.js
 │   ├── .env               # Environment variables
 │   ├── package.json
 │   └── server.js          # Entry point
 ├── database/
 │   ├── schema.sql         # Database schema
-│   └── insertdata.sql     # Sample data
+│   ├── insertdata.sql     # Sample data
+│   └── migration_shipping_location.sql
 ├── frontend/
 │   ├── app/[locale]/      # Next.js pages with i18n
+│   │   ├── about/         # About page
 │   │   ├── admin/         # Admin pages
+│   │   │   ├── addresses/
+│   │   │   ├── analytics/
+│   │   │   ├── categories/
+│   │   │   ├── offers/
+│   │   │   ├── orders/
+│   │   │   ├── products/
+│   │   │   ├── settings/
+│   │   │   ├── shipping/
+│   │   │   └── users/
 │   │   ├── cart/          # Cart page
+│   │   ├── checkout/      # Checkout page
+│   │   ├── contact/       # Contact page
+│   │   ├── favorites/     # Favorites page
+│   │   ├── forgot-password/
 │   │   ├── login/         # Login page
+│   │   ├── offers/        # Offers page
 │   │   ├── orders/        # Orders page
+│   │   │   └── [id]/      # Order detail page
 │   │   ├── products/      # Products page
+│   │   │   └── [id]/      # Product detail page
+│   │   ├── profile/       # User profile page
 │   │   ├── register/      # Register page
-│   │   ├── trader/       # Trader dashboard
-│   │   └── verify-email/  # Email verification
+│   │   ├── reset-password/
+│   │   │   └── [id]/
+│   │   ├── support/       # Support page
+│   │   ├── trader/        # Trader dashboard
+│   │   └── verify-email/
+│   │       └── [id]/
 │   ├── components/        # Reusable components
 │   │   ├── AuthProvider.js
-│   │   └── Navbar.js
+│   │   ├── icons.js
+│   │   ├── index.js
+│   │   ├── Navbar.js
+│   │   └── ui/
+│   │       ├── Badge.js
+│   │       ├── Button.js
+│   │       ├── Card.js
+│   │       ├── Footer.js
+│   │       ├── index.js
+│   │       ├── Input.js
+│   │       ├── Loading.js
+│   │       ├── ProductCard.js
+│   │       └── Tooltip.js
 │   ├── i18n/              # Translations
 │   │   ├── ar.json
 │   │   ├── en.json
 │   │   └── index.js
 │   ├── lib/               # Utilities
 │   │   ├── api.js         # API client
+│   │   ├── index.js
 │   │   └── utils.js
+│   ├── public/            # Static assets
+│   │   ├── images/
+│   │   │   └── categories/
+│   │   └── pattern.svg
 │   ├── store/             # State management
 │   │   ├── authStore.js
-│   │   └── cartStore.js
+│   │   ├── cartStore.js
+│   │   ├── index.js
+│   │   └── notificationStore.js
 │   ├── package.json
-│   └── tailwind.config.js
+│   ├── tailwind.config.js
+│   ├── postcss.config.js
+│   ├── next.config.js
+│   ├── jsconfig.json
+│   └── middleware.js
 └── README.md
 ```
 
@@ -311,6 +405,50 @@ The frontend will run on `http://localhost:3000`
 - `POST /api/admin/traders/:id/approve` - Approve trader
 - `POST /api/admin/traders/:id/reject` - Reject trader
 
+### Favorites
+- `GET /api/favorites` - Get user's favorites
+- `POST /api/favorites` - Add item to favorites
+- `DELETE /api/favorites/:id` - Remove item from favorites
+
+### Reviews
+- `GET /api/reviews/:productId` - Get product reviews
+- `POST /api/reviews` - Create review
+- `PUT /api/reviews/:id` - Update review
+- `DELETE /api/reviews/:id` - Delete review
+
+### Offers
+- `GET /api/offers` - Get all offers
+- `POST /api/offers` - Create offer (Admin)
+- `PUT /api/offers/:id` - Update offer (Admin)
+- `DELETE /api/offers/:id` - Delete offer (Admin)
+
+### Shipping
+- `GET /api/shipping` - Get shipping zones
+- `POST /api/shipping` - Create shipping zone (Admin)
+- `PUT /api/shipping/:id` - Update shipping zone (Admin)
+- `DELETE /api/shipping/:id` - Delete shipping zone (Admin)
+
+### Notifications
+- `GET /api/notifications` - Get user notifications
+- `PUT /api/notifications/:id/read` - Mark notification as read
+- `DELETE /api/notifications/:id` - Delete notification
+
+### Tickets (Support)
+- `GET /api/tickets` - Get user tickets
+- `POST /api/tickets` - Create support ticket
+- `GET /api/tickets/:id` - Get ticket details
+- `POST /api/tickets/:id/messages` - Add message to ticket
+
+### Profile
+- `GET /api/profile` - Get user profile
+- `PUT /api/profile` - Update user profile
+- `PUT /api/profile/password` - Change password
+
+### Analytics
+- `GET /api/analytics/sales` - Get sales analytics (Admin)
+- `GET /api/analytics/users` - Get user analytics (Admin)
+- `GET /api/analytics/products` - Get product analytics (Admin)
+
 ### SEO
 - `GET /api/sitemap.xml` - Dynamic sitemap
 
@@ -318,9 +456,9 @@ The frontend will run on `http://localhost:3000`
 
 | Role | Permissions |
 |------|-------------|
-| **Customer** | Browse products, manage cart, place orders, view order history |
-| **Trader** | All customer permissions + create/edit own products |
-| **Admin** | Full access: manage users, products, categories, orders, view analytics |
+| **Customer** | Browse products, manage cart, place orders, view order history, manage favorites, submit reviews, create support tickets |
+| **Trader** | All customer permissions + create/edit own products, view own product analytics |
+| **Admin** | Full access: manage users, products, categories, orders, shipping, offers, view analytics, manage support tickets |
 
 ## 🌐 Internationalization
 
@@ -343,6 +481,11 @@ Key tables:
 - `verification_tokens` - Email verification tokens
 - `shipping_areas` - Shipping zones and costs
 - `reviews` - Product reviews and ratings
+- `favorites` - User favorites/wishlist
+- `offers` - Promotional offers
+- `notifications` - User notifications
+- `tickets` - Support tickets
+- `ticket_messages` - Support ticket messages
 
 ## 🎨 Customization
 
