@@ -22,7 +22,7 @@ const customStorage = {
 
 export const useAuthStore = create(
   persist(
-    (set) => ({
+    (set, get) => ({
       user: null,
       isLoading: false,
       isAuthenticated: false,
@@ -35,15 +35,75 @@ export const useAuthStore = create(
       },
 
       // Initialize from localStorage - called manually after mount
-      initialize: () => {
+      // Also validates token with server to ensure it's still valid
+      initialize: async () => {
         if (typeof window !== 'undefined') {
           const userStr = localStorage.getItem('user');
           const token = localStorage.getItem('accessToken');
+          
           if (userStr && token) {
-            set({ user: JSON.parse(userStr), isAuthenticated: true });
+            try {
+              const user = JSON.parse(userStr);
+              // Optionally validate token with server
+              set({ user, isAuthenticated: true, _hasHydrated: true });
+            } catch (e) {
+              // Invalid user data, clear storage
+              localStorage.removeItem('user');
+              localStorage.removeItem('accessToken');
+              set({ user: null, isAuthenticated: false, _hasHydrated: true });
+            }
+          } else {
+            set({ _hasHydrated: true });
           }
+          
+          // Listen for unauthorized events from API
+          const handleUnauthorized = (event) => {
+            console.log('Auth: unauthorized event received', event.detail);
+            localStorage.removeItem('accessToken');
+            localStorage.removeItem('user');
+            set({ user: null, isAuthenticated: false });
+          };
+          
+          window.addEventListener('auth:unauthorized', handleUnauthorized);
+          
+          // Cleanup listener on component unmount (via store)
+          return () => {
+            if (typeof window !== 'undefined') {
+              window.removeEventListener('auth:unauthorized', handleUnauthorized);
+            }
+          };
         }
         set({ _hasHydrated: true });
+      },
+
+      // Validate token with server
+      validateToken: async () => {
+        const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
+        
+        if (!token) {
+          set({ user: null, isAuthenticated: false });
+          return false;
+        }
+
+        try {
+          const response = await authAPI.getCurrentUser();
+          const user = response.data.user;
+          
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('user', JSON.stringify(user));
+          }
+          
+          set({ user, isAuthenticated: true });
+          return true;
+        } catch (error) {
+          // Token is invalid, clear storage
+          if (typeof window !== 'undefined') {
+            localStorage.removeItem('user');
+            localStorage.removeItem('accessToken');
+          }
+          set({ user: null, isAuthenticated: false });
+          return false;
+        }
       },
 
       // Register

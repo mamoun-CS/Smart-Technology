@@ -41,7 +41,7 @@ export const useCartStore = create(
         try {
           const response = await cartAPI.getCart();
           const { cart, items, total } = response.data;
-          set({ cart, items, total, isLoading: false });
+          set({ cart, items, total, isLoading: false, error: null });
           return { cart, items, total };
         } catch (error) {
           // Handle rate limiting (429) gracefully
@@ -50,8 +50,17 @@ export const useCartStore = create(
             set({ isLoading: false });
             return;
           }
+          // Handle 401 (unauthorized) - user not authenticated or token invalid
+          // Don't throw, just clear the cart and return gracefully
+          if (error.response?.status === 401) {
+            console.log('Cart fetch: user not authenticated');
+            set({ isLoading: false, error: null, items: [], cart: null, total: 0 });
+            return;
+          }
+          // For other errors, store error but don't throw to prevent app crash
+          console.error('Cart fetch error:', error.response?.data?.message);
           set({ isLoading: false, error: error.response?.data?.message });
-          throw error;
+          return;
         }
       },
 

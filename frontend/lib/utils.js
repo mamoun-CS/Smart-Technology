@@ -78,3 +78,18 @@ export function isArabicLocale(locale) {
 export function getDirection(locale) {
   return isArabicLocale(locale) ? 'rtl' : 'ltr';
 }
+
+// Product image handling utilities
+export function getProductImage(images, index = 0) {
+  if (!images || !Array.isArray(images) || images.length === 0) {
+    return null;
+  }
+  return images[index] || null;
+}
+
+export function hasValidImage(images) {
+  if (!images || !Array.isArray(images)) {
+    return false;
+  }
+  return images.length > 0 && !!images[0];
+}

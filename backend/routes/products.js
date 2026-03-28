@@ -21,9 +21,9 @@ router.post('/', authMiddleware, requireTrader, requireApprovedTrader, [
 ], productController.createProduct);
 
 router.put('/:id', authMiddleware, requireAdminOrTrader, requireApprovedTrader, productController.updateProduct);
-router.delete('/:id', authMiddleware, requireTrader, requireAdmin, productController.deleteProduct);
+router.delete('/:id', authMiddleware, requireAdminOrTrader, requireApprovedTrader, productController.deleteProduct);
 
-router.post('/:id/pricing', authMiddleware, requireTrader, requireApprovedTrader, [
+router.post('/:id/pricing', authMiddleware, requireAdminOrTrader, requireApprovedTrader, [
   body('min_quantity').isInt({ min: 1 }).withMessage('Minimum quantity must be at least 1'),
   body('price').isFloat({ min: 0 }).withMessage('Price must be a positive number')
 ], productController.addPricing);

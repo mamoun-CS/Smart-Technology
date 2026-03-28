@@ -23,12 +23,13 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// Response interceptor for token refresh
+// Response interceptor for token refresh and 401 handling
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
 
+    // Handle token expiration - try to refresh
     if (error.response?.status === 401 && error.response?.data?.code === 'TOKEN_EXPIRED' && !originalRequest._retry) {
       originalRequest._retry = true;
 
@@ -47,13 +48,44 @@ api.interceptors.response.use(
         originalRequest.headers.Authorization = `Bearer ${accessToken}`;
         return api(originalRequest);
       } catch (refreshError) {
+        // Refresh failed - clear auth state and redirect to login
         if (typeof window !== 'undefined') {
           localStorage.removeItem('accessToken');
           localStorage.removeItem('user');
         }
-        window.location.href = '/login';
+        
+        // Only redirect to login if we're not already on the login/register page
+        if (typeof window !== 'undefined' && !window.location.pathname.includes('/login') && !window.location.pathname.includes('/register')) {
+          window.location.href = '/login';
+        }
         return Promise.reject(refreshError);
       }
+    }
+
+    // Handle 401 (unauthorized) - token invalid or missing for protected routes
+    if (error.response?.status === 401 && !error.response?.data?.code) {
+      // Clear potentially invalid tokens
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('user');
+      }
+      
+      // Dispatch custom event for stores to handle auth state update
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('auth:unauthorized', { 
+          detail: { message: error.response?.data?.message || 'Session expired' } 
+        }));
+      }
+    }
+
+    // Handle 403 (forbidden) - user doesn't have permission
+    if (error.response?.status === 403) {
+      console.warn('Access forbidden:', error.response?.data?.message);
+    }
+
+    // Handle 404 (not found) - resource doesn't exist
+    if (error.response?.status === 404) {
+      console.warn('Resource not found:', error.config?.url);
     }
 
     return Promise.reject(error);

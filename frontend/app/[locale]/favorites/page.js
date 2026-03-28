@@ -24,6 +24,7 @@ export default function FavoritesPage({ params: { locale = 'en' } }) {
   const [favorites, setFavorites] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [removingId, setRemovingId] = useState(null);
+  const [imageErrors, setImageErrors] = useState({});
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -44,6 +45,10 @@ export default function FavoritesPage({ params: { locale = 'en' } }) {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleImageError = (productId) => {
+    setImageErrors(prev => ({ ...prev, [productId]: true }));
   };
 
   const handleRemoveFavorite = async (productId) => {
@@ -137,11 +142,12 @@ export default function FavoritesPage({ params: { locale = 'en' } }) {
                 >
                   {/* Product Image */}
                   <div className="relative aspect-square bg-gray-100 dark:bg-gray-700">
-                    {product.images && product.images.length > 0 ? (
+                    {product.images && product.images.length > 0 && !imageErrors[product.id] ? (
                       <img
                         src={product.images[0]}
                         alt={locale === 'ar' ? product.name_ar : product.name_en}
                         className="w-full h-full object-cover"
+                        onError={() => handleImageError(product.id)}
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center">

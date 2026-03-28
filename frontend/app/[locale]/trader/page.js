@@ -103,7 +103,14 @@ export default function TraderDashboard({ params: { locale = 'en' } }) {
       toast.success('Product deleted successfully');
       fetchData();
     } catch (error) {
-      toast.error('Failed to delete product');
+      // Handle specific error cases
+      if (error.response?.status === 403) {
+        toast.error('You can only delete your own products');
+      } else if (error.response?.status === 401) {
+        toast.error('Session expired, please login again');
+      } else {
+        toast.error('Failed to delete product');
+      }
     }
   };
 

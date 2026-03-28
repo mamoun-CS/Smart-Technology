@@ -27,6 +27,12 @@ export default function ProductDetailPage({ params: { locale = 'en' } }) {
   const [quantity, setQuantity] = useState(1);
   const [selectedImage, setSelectedImage] = useState(0);
   const [isAddingToCart, setIsAddingToCart] = useState(false);
+  const [imageErrors, setImageErrors] = useState({});
+
+  // Handle image load errors
+  const handleImageError = (index) => {
+    setImageErrors(prev => ({ ...prev, [index]: true }));
+  };
   
   // Edit modal state
   const [showEditModal, setShowEditModal] = useState(false);
@@ -280,15 +286,16 @@ export default function ProductDetailPage({ params: { locale = 'en' } }) {
             </span>
           </nav>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
             {/* Product Images */}
             <div className="space-y-4">
               <div className="aspect-square bg-white dark:bg-gray-800 rounded-2xl overflow-hidden">
-                {product.images && product.images.length > 0 ? (
+                {product.images && product.images.length > 0 && !imageErrors[selectedImage] ? (
                   <img
                     src={product.images[selectedImage]}
                     alt={locale === 'ar' ? product.name_ar : product.name_en}
                     className="w-full h-full object-cover"
+                    onError={() => handleImageError(selectedImage)}
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-gray-400">
@@ -311,11 +318,18 @@ export default function ProductDetailPage({ params: { locale = 'en' } }) {
                           : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"
                       )}
                     >
-                      <img
-                        src={image}
-                        alt={`${locale === 'ar' ? product.name_ar : product.name_en} - ${index + 1}`}
-                        className="w-full h-full object-cover"
-                      />
+                      {!imageErrors[index] ? (
+                        <img
+                          src={image}
+                          alt={`${locale === 'ar' ? product.name_ar : product.name_en} - ${index + 1}`}
+                          className="w-full h-full object-cover"
+                          onError={() => handleImageError(index)}
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center bg-gray-100 dark:bg-gray-700">
+                          <Package className="w-8 h-8 text-gray-400" />
+                        </div>
+                      )}
                     </button>
                   ))}
                 </div>

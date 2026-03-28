@@ -163,7 +163,18 @@ export default function ProductsManagement({ params: { locale = 'en' } }) {
       toast.success(locale === 'ar' ? 'تم حذف المنتج' : 'Product deleted');
       fetchData();
     } catch (error) {
-      toast.error(locale === 'ar' ? 'فشل حذف المنتج' : 'Failed to delete product');
+      // Handle specific error cases
+      if (error.response?.status === 403) {
+        toast.error(locale === 'ar' 
+          ? 'ليس لديك صلاحية لحذف هذا المنتج' 
+          : 'You do not have permission to delete this product');
+      } else if (error.response?.status === 401) {
+        toast.error(locale === 'ar' 
+          ? 'انتهت الجلسة، يرجى تسجيل الدخول مرة أخرى' 
+          : 'Session expired, please login again');
+      } else {
+        toast.error(locale === 'ar' ? 'فشل حذف المنتج' : 'Failed to delete product');
+      }
     } finally {
       setShowDeleteModal(false);
       setProductToDelete(null);

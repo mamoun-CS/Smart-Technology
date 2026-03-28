@@ -44,7 +44,15 @@ export const useNotificationStore = create(
             isLoading: false 
           });
         } catch (error) {
-          console.error('Error fetching notifications:', error);
+          // Handle 401 (unauthorized) - user not authenticated or token invalid
+          // Don't log as error, just clear notifications and return gracefully
+          if (error.response?.status === 401) {
+            console.log('Notifications fetch: user not authenticated');
+            set({ isLoading: false, notifications: [], unreadCount: 0 });
+            return;
+          }
+          // Log other errors as warnings
+          console.error('Error fetching notifications:', error.response?.data?.message || error.message);
           set({ isLoading: false });
         }
       },

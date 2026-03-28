@@ -20,7 +20,8 @@ export default function CartPage({ params: { locale = 'en' } }) {
   const t = dict?.common || {};
   const cartT = dict?.cart || {};
   
-  const { user, isAuthenticated } = useAuthStore();
+  // Use _hasHydrated from auth store to wait for localStorage rehydration
+  const { user, isAuthenticated, _hasHydrated } = useAuthStore();
   const [cart, setCart] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [updatingItemId, setUpdatingItemId] = useState(null);
@@ -36,7 +37,7 @@ export default function CartPage({ params: { locale = 'en' } }) {
   const fetchCart = async () => {
     try {
       setIsLoading(true);
-      const response = await cartAPI.get();
+      const response = await cartAPI.getCart();
       setCart(response.data);
     } catch (error) {
       console.error('Error fetching cart:', error);
@@ -122,6 +123,18 @@ export default function CartPage({ params: { locale = 'en' } }) {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <Loading />
           </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show loading until hydrated to prevent hydration mismatch
+  if (!_hasHydrated) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+        <Navbar locale={locale} dict={dict} />
+        <div className="pt-24 pb-12">
+          <Loading />
         </div>
       </div>
     );
