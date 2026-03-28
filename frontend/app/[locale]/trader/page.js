@@ -3,15 +3,15 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Package, DollarSign, ShoppingCart, Plus, Edit, Trash2 } from 'lucide-react';
+import { Package, DollarSign, ShoppingCart, Plus, Edit, Trash2 } from '@/components/icons';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
-import { useAuthStore } from '../../../store/authStore';
-import { productsAPI, ordersAPI } from '../../../lib/api';
-import { getDictionary } from '../../../i18n';
-import { formatPrice, cn } from '../../../lib/utils';
+import { useAuthStore } from '@/store';
+import { productsAPI, ordersAPI } from '@/lib';
+import { getDictionary } from '@/i18n';
+import { formatPrice, cn } from '@/lib';
 import { toast } from 'sonner';
-import Navbar from '../../../components/Navbar';
+import { Navbar } from '@/components';
 
 export default function TraderDashboard({ params: { locale = 'en' } }) {
   const [stats, setStats] = useState(null);

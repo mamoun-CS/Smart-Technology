@@ -3,16 +3,16 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
-import { ArrowLeft, CreditCard, MapPin, Truck, Store, AlertCircle, Check } from 'lucide-react';
-import { useCartStore } from '../../../store/cartStore';
-import { useAuthStore } from '../../../store/authStore';
-import { getDictionary } from '../../../i18n';
-import { formatPrice, cn } from '../../../lib/utils';
+import { ArrowLeft, CreditCard, MapPin, Truck, Store, AlertCircle, Check } from '@/components/icons';
+import { useCartStore } from '@/store';
+import { useAuthStore } from '@/store';
+import { getDictionary } from '@/i18n';
+import { formatPrice, cn } from '@/lib';
 import { toast } from 'sonner';
-import Navbar from '../../../components/Navbar';
-import Footer from '../../../components/ui/Footer';
-import Button from '../../../components/ui/Button';
-import Input from '../../../components/ui/Input';
+import { Navbar } from '@/components';
+import { Footer } from '@/components';
+import { Button } from '@/components';
+import { Input } from '@/components';
 
 function CheckoutContent({ locale = 'en' }) {
   const router = useRouter();

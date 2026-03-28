@@ -6,7 +6,8 @@ const cartController = {
   // Get cart
   async getCart(req, res) {
     try {
-      const { cart, items } = await cartModel.getCartWithItems(req.user.id);
+      const userRole = req.user.role || 'customer';
+      const { cart, items } = await cartModel.getCartWithItems(req.user.id, userRole);
       
       const total = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
       const totalQuantity = items.reduce((sum, item) => sum + item.quantity, 0);
@@ -51,7 +52,8 @@ const cartController = {
 
       await cartModel.addItem(req.user.id, product_id, quantity);
       
-      const { cart, items } = await cartModel.getCartWithItems(req.user.id);
+      const userRole = req.user.role || 'customer';
+      const { cart, items } = await cartModel.getCartWithItems(req.user.id, userRole);
       const total = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
       const totalQuantity = items.reduce((sum, item) => sum + item.quantity, 0);
 
@@ -103,7 +105,8 @@ const cartController = {
 
       await cartModel.updateItemQuantity(req.user.id, product_id, quantity);
       
-      const { cart, items } = await cartModel.getCartWithItems(req.user.id);
+      const userRole = req.user.role || 'customer';
+      const { cart, items } = await cartModel.getCartWithItems(req.user.id, userRole);
       const total = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
       const totalQuantity = items.reduce((sum, item) => sum + item.quantity, 0);
 
@@ -131,7 +134,8 @@ const cartController = {
 
       await cartModel.removeItem(req.user.id, product_id);
       
-      const { cart, items } = await cartModel.getCartWithItems(req.user.id);
+      const userRole = req.user.role || 'customer';
+      const { cart, items } = await cartModel.getCartWithItems(req.user.id, userRole);
       const total = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
       const totalQuantity = items.reduce((sum, item) => sum + item.quantity, 0);
 
@@ -178,8 +182,9 @@ const cartController = {
   async getCartSummary(req, res) {
     try {
       const { city, delivery_method } = req.query;
+      const userRole = req.user.role || 'customer';
       
-      const { cart, items } = await cartModel.getCartWithItems(req.user.id);
+      const { cart, items } = await cartModel.getCartWithItems(req.user.id, userRole);
       const subtotal = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
       const totalQuantity = items.reduce((sum, item) => sum + item.quantity, 0);
       

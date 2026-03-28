@@ -3,17 +3,17 @@
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Search, Filter, X, ShoppingCart, Star, Grid, List, SlidersHorizontal } from 'lucide-react';
-import { productsAPI, reviewsAPI } from '../../../lib/api';
-import { getDictionary } from '../../../i18n';
-import { formatPrice, debounce, cn } from '../../../lib/utils';
-import { useCartStore } from '../../../store/cartStore';
-import { useAuthStore } from '../../../store/authStore';
+import { Search, Filter, X, ShoppingCart, Star, Grid, List, SlidersHorizontal } from '@/components/icons';
+import { productsAPI, reviewsAPI } from '@/lib';
+import { getDictionary } from '@/i18n';
+import { formatPrice, debounce, cn } from '@/lib';
+import { useCartStore } from '@/store';
+import { useAuthStore } from '@/store';
 import { toast } from 'sonner';
-import Navbar from '../../../components/Navbar';
-import Footer from '../../../components/ui/Footer';
-import ProductCard from '../../../components/ui/ProductCard';
-import Button from '../../../components/ui/Button';
+import { Navbar } from '@/components';
+import { Footer } from '@/components';
+import { ProductCard } from '@/components';
+import { Button } from '@/components';
 
 export default function ProductsPage({ params: { locale = 'en' } }) {
   const [products, setProducts] = useState([]);

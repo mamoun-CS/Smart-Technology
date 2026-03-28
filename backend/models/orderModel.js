@@ -106,12 +106,11 @@ const orderModel = {
           status, 
           shipping_address, 
           payment_method,
-          city,
           delivery_method,
           shipping_cost,
           is_large_order
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
         RETURNING *
       `;
       const orderResult = await client.query(orderQuery, [
@@ -120,7 +119,6 @@ const orderModel = {
         orderStatus, 
         shipping_address, 
         payment_method,
-        city,
         delivery_method,
         shippingCost,
         isLargeOrder
@@ -230,19 +228,24 @@ const orderModel = {
     
     let query = `
       SELECT o.id, o.user_id, o.total_price, o.status, o.shipping_address, o.payment_method, 
-             o.city, o.delivery_method, o.shipping_cost, o.is_large_order,
+             sa.city, o.delivery_method, o.shipping_cost, o.is_large_order,
              o.created_at, o.updated_at,
              CAST(o.total_price AS VARCHAR) as total_amount, 
-             u.name as customer_name, u.email as customer_email,
+             u.name as customer_name, u.email as customer_email, u.phone as customer_phone,
              json_agg(json_build_object(
                'id', oi.id,
                'product_id', oi.product_id,
                'quantity', oi.quantity,
-               'price', oi.price
+               'price', oi.price,
+               'name_en', p.name_en,
+               'name_ar', p.name_ar,
+               'images', p.images
              )) as items
       FROM orders o
       LEFT JOIN users u ON o.user_id = u.id
       LEFT JOIN order_items oi ON o.id = oi.order_id
+      LEFT JOIN products p ON oi.product_id = p.id
+      LEFT JOIN shipping_addresses sa ON o.user_id = sa.user_id AND sa.is_default = true
     `;
     const values = [];
     
@@ -251,7 +254,7 @@ const orderModel = {
       values.push(status);
     }
     
-    query += ' GROUP BY o.id, u.name, u.email ORDER BY o.created_at DESC LIMIT $' + (values.length + 1) + ' OFFSET $' + (values.length + 2);
+    query += ' GROUP BY o.id, u.name, u.email, u.phone, sa.city ORDER BY o.created_at DESC LIMIT $' + (values.length + 1) + ' OFFSET $' + (values.length + 2);
     values.push(limit, offset);
     
     const countQuery = status 

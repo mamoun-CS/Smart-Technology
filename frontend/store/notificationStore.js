@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { notificationsAPI } from '../lib/api';
+import { notificationsAPI } from '@/lib';
 
 export const useNotificationStore = create((set, get) => ({
   notifications: [],

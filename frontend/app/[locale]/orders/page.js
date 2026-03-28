@@ -4,12 +4,12 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { useAuthStore } from '../../../store/authStore';
-import { ordersAPI } from '../../../lib/api';
-import { getDictionary } from '../../../i18n';
-import { formatPrice, formatDate, getStatusColor, cn } from '../../../lib/utils';
-import Navbar from '../../../components/Navbar';
-import { MapPin, Truck, Store, AlertCircle } from 'lucide-react';
+import { useAuthStore } from '@/store';
+import { ordersAPI } from '@/lib';
+import { getDictionary } from '@/i18n';
+import { formatPrice, formatDate, getStatusColor, cn } from '@/lib';
+import { Navbar } from '@/components';
+import { MapPin, Truck, Store, AlertCircle } from '@/components/icons';
 
 export default function OrdersPage({ params: { locale = 'en' } }) {
   const [orders, setOrders] = useState([]);
@@ -167,10 +167,10 @@ export default function OrdersPage({ params: { locale = 'en' } }) {
                       {order.items?.map((item) => (
                         <div key={item.id} className="flex items-center gap-4">
                           <div className="w-16 h-16 rounded-lg bg-gray-100 dark:bg-gray-700 overflow-hidden flex-shrink-0">
-                            {item.images?.[0] ? (
+                            {item.images && item.images.length > 0 ? (
                               <Image 
                                 src={item.images[0]} 
-                                alt={item.name_en}
+                                alt={locale === 'ar' ? item.name_ar : item.name_en}
                                 width={64}
                                 height={64}
                                 className="object-cover"
@@ -182,7 +182,9 @@ export default function OrdersPage({ params: { locale = 'en' } }) {
                           </div>
                           <div className="flex-1">
                             <p className="font-medium">{locale === 'ar' ? item.name_ar : item.name_en}</p>
-                            <p className="text-sm text-gray-500">Qty: {item.quantity}</p>
+                            <p className="text-sm text-gray-500">
+                              {item.quantity} x {formatPrice(item.price, locale)}
+                            </p>
                           </div>
                           <p className="font-semibold text-primary-600">
                             {formatPrice(item.price * item.quantity, locale)}

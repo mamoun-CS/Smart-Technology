@@ -1,14 +1,14 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Tag, Gift, Percent, DollarSign, Calendar, Users, Copy, Check } from 'lucide-react';
+import { Tag, Gift, Percent, DollarSign, Calendar, Users, Copy, Check } from '@/components/icons';
 import { useRouter } from 'next/navigation';
-import { useAuthStore } from '../../store/authStore';
-import { offersAPI } from '../../lib/api';
-import { getDictionary } from '../../i18n';
-import { formatPrice, formatDate, cn } from '../../lib/utils';
+import { useAuthStore } from '@/store';
+import { offersAPI } from '@/lib';
+import { getDictionary } from '@/i18n';
+import { formatPrice, formatDate, cn } from '@/lib';
 import { toast } from 'sonner';
-import Navbar from '../../components/Navbar';
+import { Navbar } from '@/components';
 
 export default function OffersPage({ params: { locale = 'en' } }) {
   const [offers, setOffers] = useState([]);

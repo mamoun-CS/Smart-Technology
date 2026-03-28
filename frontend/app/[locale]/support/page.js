@@ -2,14 +2,14 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { MessageSquare, Send, Clock, CheckCircle, AlertCircle, Plus } from 'lucide-react';
+import { MessageSquare, Send, Clock, CheckCircle, AlertCircle, Plus } from '@/components/icons';
 import { useRouter } from 'next/navigation';
-import { useAuthStore } from '../../store/authStore';
-import { ticketsAPI } from '../../lib/api';
-import { getDictionary } from '../../i18n';
-import { formatDate, cn } from '../../lib/utils';
+import { useAuthStore } from '@/store';
+import { ticketsAPI } from '@/lib';
+import { getDictionary } from '@/i18n';
+import { formatDate, cn } from '@/lib';
 import { toast } from 'sonner';
-import Navbar from '../../components/Navbar';
+import { Navbar } from '@/components';
 
 export default function SupportPage({ params: { locale = 'en' } }) {
   const [tickets, setTickets] = useState([]);

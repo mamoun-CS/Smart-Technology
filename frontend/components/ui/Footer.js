@@ -1,9 +1,9 @@
 'use client';
 
 import Link from 'next/link';
-import { Mail, Phone, MapPin, Facebook, Twitter, Instagram, Youtube, Send } from 'lucide-react';
+import { Mail, Phone, MapPin, Facebook, Twitter, Instagram, Youtube, Send } from '@/components/icons';
 import { useState } from 'react';
-import { cn, getDirection } from '../../lib/utils';
+import { cn, getDirection } from '@/lib';
 
 export default function Footer({ locale = 'en', dict = {} }) {
   const [email, setEmail] = useState('');

@@ -4,15 +4,15 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { ArrowRight, Star, Zap, Shield, Truck, ChevronRight, Sparkles } from 'lucide-react';
-import { useAuthStore } from '../../store/authStore';
-import { productsAPI } from '../../lib/api';
-import { getDictionary } from '../../i18n';
-import { formatPrice, cn } from '../../lib/utils';
-import Navbar from '../../components/Navbar';
-import Footer from '../../components/ui/Footer';
-import ProductCard from '../../components/ui/ProductCard';
-import Button from '../../components/ui/Button';
+import { ArrowRight, Star, Zap, Shield, Truck, ChevronRight, Sparkles } from '@/components/icons';
+import { useAuthStore } from '@/store';
+import { productsAPI } from '@/lib';
+import { getDictionary } from '@/i18n';
+import { formatPrice, cn } from '@/lib';
+import { Navbar } from '@/components';
+import { Footer } from '@/components';
+import { ProductCard } from '@/components';
+import { Button } from '@/components';
 
 export default function HomePage({ params: { locale = 'en' } }) {
   const [products, setProducts] = useState([]);

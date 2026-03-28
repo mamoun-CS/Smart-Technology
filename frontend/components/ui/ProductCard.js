@@ -2,9 +2,9 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { Heart, ShoppingCart, Eye, Star } from 'lucide-react';
-import { formatPrice, cn } from '../../lib/utils';
-import { useCartStore } from '../../store/cartStore';
+import { Heart, ShoppingCart, Eye, Star } from '@/components/icons';
+import { formatPrice, cn } from '@/lib';
+import { useCartStore } from '@/store';
 import { useState } from 'react';
 import { toast } from 'sonner';
 

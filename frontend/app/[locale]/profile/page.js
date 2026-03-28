@@ -17,15 +17,15 @@ import {
   Loader2,
   Package,
   ShoppingBag
-} from 'lucide-react';
-import { useAuthStore } from '../../../store/authStore';
-import { profileAPI } from '../../../lib/api';
-import { getDictionary } from '../../../i18n';
-import { formatDate, cn } from '../../../lib/utils';
+} from '@/components/icons';
+import { useAuthStore } from '@/store';
+import { profileAPI } from '@/lib';
+import { getDictionary } from '@/i18n';
+import { formatDate, cn } from '@/lib';
 import { toast } from 'sonner';
-import Navbar from '../../../components/Navbar';
-import Footer from '../../../components/ui/Footer';
-import Button from '../../../components/ui/Button';
+import { Navbar } from '@/components';
+import { Footer } from '@/components';
+import { Button } from '@/components';
 
 const profileSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),

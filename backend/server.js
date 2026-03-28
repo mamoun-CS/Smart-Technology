@@ -19,6 +19,7 @@ const offerRoutes = require('./routes/offers');
 const notificationRoutes = require('./routes/notifications');
 const shippingRoutes = require('./routes/shipping');
 const ticketRoutes = require('./routes/tickets');
+const favoriteRoutes = require('./routes/favorites');
 require('dotenv').config();
 
 const app = express();
@@ -75,6 +76,7 @@ app.use('/api/offers', offerRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/shipping', shippingRoutes);
 app.use('/api/tickets', ticketRoutes);
+app.use('/api/favorites', favoriteRoutes);
 
 // Google OAuth routes
 app.get('/api/auth/google', passport.authenticate('google', { scope: ['profile', 'email'] }));

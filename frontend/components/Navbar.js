@@ -3,11 +3,11 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
-import { ShoppingCart, User, Menu, X, Globe, LogOut, LayoutDashboard, Package, Bell, MessageSquare, Tag, Settings } from 'lucide-react';
-import { useAuthStore } from '../store/authStore';
-import { useCartStore } from '../store/cartStore';
-import { useNotificationStore } from '../store/notificationStore';
-import { cn, getDirection } from '../lib/utils';
+import { ShoppingCart, User, Menu, X, Globe, LogOut, LayoutDashboard, Package, Bell, MessageSquare, Tag, Settings, Heart } from '@/components/icons';
+import { useAuthStore } from '@/store';
+import { useCartStore } from '@/store';
+import { useNotificationStore } from '@/store';
+import { cn, getDirection } from '@/lib';
 
 export default function Navbar({ locale = 'en', dict = {} }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -291,6 +291,13 @@ export default function Navbar({ locale = 'en', dict = {} }) {
                       </Link>
                     )}
                     <Link 
+                      href={`/${locale}/favorites`}
+                      className="flex items-center gap-2 px-3 py-2 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
+                    >
+                      <Heart className="w-4 h-4" />
+                      {navT.favorites || 'Favorites'}
+                    </Link>
+                    <Link 
                       href={`/${locale}/orders`}
                       className="flex items-center gap-2 px-3 py-2 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
                     >
@@ -366,6 +373,13 @@ export default function Navbar({ locale = 'en', dict = {} }) {
                     onClick={() => setIsOpen(false)}
                   >
                     {navT.profile || 'Profile'}
+                  </Link>
+                  <Link 
+                    href={`/${locale}/favorites`}
+                    className="px-4 py-2 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg"
+                    onClick={() => setIsOpen(false)}
+                  >
+                    {navT.favorites || 'Favorites'}
                   </Link>
                   <Link 
                     href={`/${locale}/products`}

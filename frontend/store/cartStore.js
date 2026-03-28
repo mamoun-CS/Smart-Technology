@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { cartAPI } from '../lib/api';
+import { cartAPI } from '@/lib';
 
 export const useCartStore = create((set, get) => ({
   cart: null,

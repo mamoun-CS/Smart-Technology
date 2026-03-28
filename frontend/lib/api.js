@@ -174,6 +174,17 @@ export const ticketsAPI = {
   getStats: () => api.get('/tickets/stats'),
 };
 
+// Favorites API
+export const favoritesAPI = {
+  getAll: () => api.get('/favorites'),
+  getCount: () => api.get('/favorites/count'),
+  check: (productId) => api.get(`/favorites/check/${productId}`),
+  add: (productId) => api.post('/favorites', { product_id: productId }),
+  remove: (productId) => api.delete(`/favorites/${productId}`),
+  toggle: (productId) => api.post('/favorites/toggle', { product_id: productId }),
+  getMostFavorited: (limit = 10) => api.get('/favorites/admin/most-favorited', { params: { limit } }),
+};
+
 // Admin API
 export const adminAPI = {
   getUsers: (params) => api.get('/admin/users', { params }),

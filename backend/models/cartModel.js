@@ -15,7 +15,7 @@ const cartModel = {
   },
 
   // Get cart with items
-  async getCartWithItems(userId) {
+  async getCartWithItems(userId, userRole = 'customer') {
     const cart = await this.getOrCreateCart(userId);
     
     const query = `
@@ -28,8 +28,8 @@ const cartModel = {
     
     // Calculate prices based on quantity and include wholesale info
     const items = await Promise.all(result.rows.map(async (item) => {
-      const price = await this.getPriceWithQuantity(item.product_id, item.quantity);
-      const isWholesaleApplied = await this.isWholesalePriceApplied(item.product_id, item.quantity);
+      const price = await this.getPriceWithQuantity(item.product_id, item.quantity, userRole);
+      const isWholesaleApplied = await this.isWholesalePriceApplied(item.product_id, item.quantity, userRole);
       
       return { 
         ...item, 
@@ -45,7 +45,7 @@ const cartModel = {
   },
 
   // Get price with quantity-based pricing (wholesale pricing logic)
-  async getPriceWithQuantity(productId, quantity) {
+  async getPriceWithQuantity(productId, quantity, userRole = 'customer') {
     // First check if product has wholesale pricing
     const productQuery = `
       SELECT unit_price, wholesale_price, min_order_quantity 
@@ -63,8 +63,8 @@ const cartModel = {
     const wholesalePrice = product.wholesale_price;
     const minOrderQuantity = product.min_order_quantity || 1;
     
-    // Apply wholesale price if quantity meets minimum
-    if (wholesalePrice && quantity >= minOrderQuantity) {
+    // Apply wholesale price only if user is merchant/admin AND quantity meets minimum
+    if (wholesalePrice && quantity >= minOrderQuantity && (userRole === 'merchant' || userRole === 'admin')) {
       return wholesalePrice;
     }
     
@@ -86,7 +86,7 @@ const cartModel = {
   },
   
   // Check if wholesale price is applied for a product
-  async isWholesalePriceApplied(productId, quantity) {
+  async isWholesalePriceApplied(productId, quantity, userRole = 'customer') {
     const productQuery = `
       SELECT wholesale_price, min_order_quantity 
       FROM products 
@@ -99,7 +99,8 @@ const cartModel = {
     }
     
     const product = productResult.rows[0];
-    return product.wholesale_price && quantity >= product.min_order_quantity;
+    // Wholesale is only applied if user is merchant/admin AND quantity meets minimum
+    return product.wholesale_price && quantity >= product.min_order_quantity && (userRole === 'merchant' || userRole === 'admin');
   },
 
   // Add item to cart
@@ -173,8 +174,8 @@ const cartModel = {
   },
 
   // Get cart total
-  async getCartTotal(userId) {
-    const { items } = await this.getCartWithItems(userId);
+  async getCartTotal(userId, userRole = 'customer') {
+    const { items } = await this.getCartWithItems(userId, userRole);
     return items.reduce((total, item) => total + (item.price * item.quantity), 0);
   }
 };

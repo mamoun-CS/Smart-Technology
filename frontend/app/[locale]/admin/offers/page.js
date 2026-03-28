@@ -3,13 +3,13 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Plus, Edit, Trash2, Tag, Calendar, Percent, DollarSign, Users, X } from 'lucide-react';
-import { useAuthStore } from '../../../../store/authStore';
-import { offersAPI } from '../../../../lib/api';
-import { getDictionary } from '../../../../i18n';
-import { formatPrice, formatDate, cn } from '../../../../lib/utils';
+import { Plus, Edit, Trash2, Tag, Calendar, Percent, DollarSign, Users, X } from '@/components/icons';
+import { useAuthStore } from '@/store';
+import { offersAPI } from '@/lib';
+import { getDictionary } from '@/i18n';
+import { formatPrice, formatDate, cn } from '@/lib';
 import { toast } from 'sonner';
-import Navbar from '../../../../components/Navbar';
+import { Navbar } from '@/components';
 
 export default function OffersManagement({ params: { locale = 'en' } }) {
   const [offers, setOffers] = useState([]);

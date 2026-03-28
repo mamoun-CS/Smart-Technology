@@ -3,7 +3,7 @@ const router = express.Router();
 const { body } = require('express-validator');
 const productController = require('../controllers/productController');
 const authMiddleware = require('../middleware/auth');
-const { requireAdmin, requireTrader, requireApprovedTrader } = require('../middleware/rbac');
+const { requireAdmin, requireTrader, requireAdminOrTrader, requireApprovedTrader } = require('../middleware/rbac');
 
 // Public routes - Note: /categories must be BEFORE /:id to avoid conflicts
 router.get('/categories', productController.getCategories);
@@ -20,7 +20,7 @@ router.post('/', authMiddleware, requireTrader, requireApprovedTrader, [
   body('min_order_quantity').optional().isInt({ min: 1 }).withMessage('Min order quantity must be at least 1')
 ], productController.createProduct);
 
-router.put('/:id', authMiddleware, requireTrader, requireApprovedTrader, productController.updateProduct);
+router.put('/:id', authMiddleware, requireAdminOrTrader, requireApprovedTrader, productController.updateProduct);
 router.delete('/:id', authMiddleware, requireTrader, requireAdmin, productController.deleteProduct);
 
 router.post('/:id/pricing', authMiddleware, requireTrader, requireApprovedTrader, [

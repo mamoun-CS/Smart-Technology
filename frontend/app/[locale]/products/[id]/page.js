@@ -1,64 +1,82 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter, useParams } from 'next/navigation';
-import Link from 'next/link';
-import { 
-  ChevronLeft, Heart, ShoppingCart, Star, Shield, Truck, 
-  RotateCcw, Minus, Plus, Check, AlertCircle
-} from 'lucide-react';
-import { productsAPI, cartAPI } from '../../../../lib/api';
-import { getDictionary } from '../../../../i18n';
-import { formatPrice, cn } from '../../../../lib/utils';
-import { useCartStore } from '../../../../store/cartStore';
-import { useAuthStore } from '../../../../store/authStore';
+import { useState, useEffect, useRef } from 'react';
+import { useParams, useRouter } from 'next/navigation';
+import { useAuthStore } from '@/store';
+import { productsAPI, cartAPI } from '@/lib';
+import { getDictionary } from '@/i18n';
+import { formatPrice, cn } from '@/lib';
 import { toast } from 'sonner';
-import Navbar from '../../../../components/Navbar';
-import Footer from '../../../../components/ui/Footer';
-import Button from '../../../../components/ui/Button';
-import Loading from '../../../../components/ui/Loading';
+import { Navbar } from '@/components';
+import { Footer } from '@/components';
+import { Button } from '@/components';
+import { Loading } from '@/components';
+import { Tooltip } from '@/components';
+import { ShoppingCart, Heart, Share2, ChevronLeft, ChevronRight, Info, Edit, X, Upload } from '@/components/icons';
 
-export default function ProductDetail({ params: { locale = 'en' } }) {
+export default function ProductDetailPage({ params: { locale = 'en' } }) {
   const { id } = useParams();
   const router = useRouter();
   const dict = getDictionary(locale);
   const t = dict?.common || {};
   const productT = dict?.products || {};
   
-  const { addItem: addToCartStore } = useCartStore();
-  const { isAuthenticated } = useAuthStore();
-  
+  const { user, isAuthenticated } = useAuthStore();
   const [product, setProduct] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [quantity, setQuantity] = useState(1);
   const [selectedImage, setSelectedImage] = useState(0);
-  const [selectedPricingTier, setSelectedPricingTier] = useState(null);
   const [isAddingToCart, setIsAddingToCart] = useState(false);
-  const [isWishlisted, setIsWishlisted] = useState(false);
+  
+  // Edit modal state
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [imagePreviews, setImagePreviews] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const fileInputRef = useRef(null);
+  
+  const [formData, setFormData] = useState({
+    name_en: '',
+    name_ar: '',
+    description_en: '',
+    description_ar: '',
+    unit_price: '',
+    wholesale_price: '',
+    min_order_quantity: 1,
+    stock: 0,
+    category_id: '',
+    images: [],
+    barcode: '',
+    warehouse_location: ''
+  });
 
   useEffect(() => {
-    if (id) {
-      fetchProduct();
+    fetchProduct();
+    if (user?.role === 'admin') {
+      fetchCategories();
     }
-  }, [id]);
+  }, [id, user]);
 
   const fetchProduct = async () => {
     try {
       setIsLoading(true);
       const response = await productsAPI.getOne(id);
       setProduct(response.data.product);
-      
-      // Set default pricing tier if available
-      if (response.data.product?.pricing?.length > 0) {
-        setSelectedPricingTier(response.data.product.pricing[0]);
-      }
-    } catch (err) {
-      console.error('Error fetching product:', err);
-      setError('Failed to load product');
-      toast.error('Failed to load product');
+    } catch (error) {
+      console.error('Error fetching product:', error);
+      toast.error(locale === 'ar' ? 'فشل تحميل المنتج' : 'Failed to load product');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const fetchCategories = async () => {
+    try {
+      const response = await productsAPI.getCategories();
+      setCategories(response.data.categories || []);
+    } catch (error) {
+      console.error('Error fetching categories:', error);
     }
   };
 
@@ -70,38 +88,155 @@ export default function ProductDetail({ params: { locale = 'en' } }) {
 
     try {
       setIsAddingToCart(true);
-      
-      // Calculate price based on selected tier
-      const price = selectedPricingTier?.price || product?.price;
-      
       await cartAPI.addItem({
         product_id: product.id,
-        quantity: quantity,
-        price: price
+        quantity: quantity
       });
-      
-      addToCartStore(product.id, quantity);
-      
-      toast.success(t.addedToCart || 'Added to cart');
-    } catch (err) {
-      console.error('Error adding to cart:', err);
-      toast.error('Failed to add to cart');
+      toast.success(locale === 'ar' ? 'تمت الإضافة إلى السلة' : 'Added to cart');
+    } catch (error) {
+      console.error('Error adding to cart:', error);
+      toast.error(locale === 'ar' ? 'فشل الإضافة إلى السلة' : 'Failed to add to cart');
     } finally {
       setIsAddingToCart(false);
     }
   };
 
-  const handleBuyNow = async () => {
-    await handleAddToCart();
-    router.push(`/${locale}/cart`);
+  const handleQuantityChange = (delta) => {
+    const newQuantity = quantity + delta;
+    if (newQuantity >= 1 && newQuantity <= (product?.stock || 999)) {
+      setQuantity(newQuantity);
+    }
+  };
+
+  // Check if user can see wholesale price
+  const canSeeWholesalePrice = user?.role === 'admin' || user?.role === 'merchant';
+  const isCustomer = user?.role === 'customer' || !user?.role;
+  const isAdmin = user?.role === 'admin';
+
+  // Calculate if wholesale price should be applied
+  const shouldApplyWholesale = canSeeWholesalePrice && 
+    product?.wholesale_price && 
+    quantity >= (product?.min_order_quantity || 1);
+
+  // Get the effective price
+  const getEffectivePrice = () => {
+    if (shouldApplyWholesale) {
+      return product.wholesale_price;
+    }
+    return product?.unit_price || product?.price || 0;
+  };
+
+  // Calculate savings
+  const getSavings = () => {
+    if (shouldApplyWholesale && product?.unit_price && product?.wholesale_price) {
+      return product.unit_price - product.wholesale_price;
+    }
+    return 0;
+  };
+
+  // Edit modal functions
+  const handleEditClick = () => {
+    setFormData({
+      name_en: product.name_en || '',
+      name_ar: product.name_ar || '',
+      description_en: product.description_en || '',
+      description_ar: product.description_ar || '',
+      unit_price: product.unit_price || '',
+      wholesale_price: product.wholesale_price || '',
+      min_order_quantity: product.min_order_quantity || 1,
+      stock: product.stock || 0,
+      category_id: product.category_id || '',
+      images: product.images || [],
+      barcode: product.barcode || '',
+      warehouse_location: product.warehouse_location || ''
+    });
+    setImagePreviews(product.images || []);
+    setShowEditModal(true);
+  };
+
+  const handleImageUpload = async (e) => {
+    const files = Array.from(e.target.files);
+    if (files.length === 0) return;
+
+    setIsUploading(true);
+    try {
+      const newPreviews = files.map(file => URL.createObjectURL(file));
+      setImagePreviews(prev => [...prev, ...newPreviews]);
+
+      const newImageUrls = files.map(file => URL.createObjectURL(file));
+      
+      setFormData(prev => ({
+        ...prev,
+        images: [...prev.images, ...newImageUrls]
+      }));
+
+      toast.success(locale === 'ar' ? 'تم إضافة الصور' : 'Images added');
+    } catch (error) {
+      toast.error(locale === 'ar' ? 'فشل رفع الصور' : 'Failed to upload images');
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const removeImage = (index) => {
+    setImagePreviews(prev => prev.filter((_, i) => i !== index));
+    setFormData(prev => ({
+      ...prev,
+      images: prev.images.filter((_, i) => i !== index)
+    }));
+  };
+
+  const handleUpdateProduct = async (e) => {
+    e.preventDefault();
+    setIsUpdating(true);
+    
+    try {
+      const unitPrice = parseFloat(formData.unit_price);
+      const wholesalePrice = parseFloat(formData.wholesale_price) || unitPrice;
+      const minOrderQuantity = parseInt(formData.min_order_quantity) || 1;
+      
+      if (wholesalePrice && unitPrice && wholesalePrice >= unitPrice) {
+        toast.error(locale === 'ar' 
+          ? 'سعر الجملة يجب أن يكون أقل من سعر التجزئة' 
+          : 'Wholesale price must be less than retail price'
+        );
+        return;
+      }
+      
+      if (minOrderQuantity < 1) {
+        toast.error(locale === 'ar' 
+          ? 'الحد الأدنى للطلب يجب أن يكون على الأقل 1' 
+          : 'Minimum order quantity must be at least 1'
+        );
+        return;
+      }
+      
+      const data = {
+        ...formData,
+        unit_price: unitPrice,
+        wholesale_price: wholesalePrice,
+        min_order_quantity: minOrderQuantity,
+        stock: parseInt(formData.stock) || 0
+      };
+      
+      await productsAPI.update(product.id, data);
+      toast.success(locale === 'ar' ? 'تم تحديث المنتج' : 'Product updated');
+      
+      setShowEditModal(false);
+      fetchProduct(); // Refresh product data
+    } catch (error) {
+      toast.error(error.response?.data?.message || (locale === 'ar' ? 'فشل تحديث المنتج' : 'Failed to update product'));
+    } finally {
+      setIsUpdating(false);
+    }
   };
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-dark-950">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
         <Navbar locale={locale} dict={dict} />
         <div className="pt-24 pb-12">
-          <div className="container-custom">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <Loading />
           </div>
         </div>
@@ -109,88 +244,78 @@ export default function ProductDetail({ params: { locale = 'en' } }) {
     );
   }
 
-  if (error || !product) {
+  if (!product) {
     return (
-      <div className="min-h-screen bg-dark-950">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
         <Navbar locale={locale} dict={dict} />
         <div className="pt-24 pb-12">
-          <div className="container-custom">
-            <div className="card p-12 bg-dark-800 border-dark-600 text-center">
-              <h2 className="text-2xl font-bold text-white mb-4">
-                {t.productNotFound || 'Product Not Found'}
-              </h2>
-              <p className="text-gray-400 mb-6">{error || 'The product you are looking for does not exist.'}</p>
-              <Link href={`/${locale}/products`}>
-                <Button>{t.browseProducts || 'Browse Products'}</Button>
-              </Link>
-            </div>
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+              {locale === 'ar' ? 'المنتج غير موجود' : 'Product not found'}
+            </h1>
           </div>
         </div>
       </div>
     );
   }
 
-  const currentPrice = selectedPricingTier?.price || product.price;
-  const hasDiscount = product.original_price && product.original_price > currentPrice;
-  const discountPercent = hasDiscount ? Math.round(((product.original_price - currentPrice) / product.original_price) * 100) : 0;
-
   return (
-    <div className="min-h-screen bg-dark-950">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <Navbar locale={locale} dict={dict} />
       
-      {/* Breadcrumb */}
-      <div className="pt-20 bg-dark-900">
-        <div className="container-custom py-4">
-          <div className="flex items-center gap-2 text-sm text-gray-400">
-            <Link href={`/${locale}`} className="hover:text-white transition-colors">
-              {t.home || 'Home'}
-            </Link>
-            <ChevronLeft className="w-4 h-4 rotate-180" />
-            <Link href={`/${locale}/products`} className="hover:text-white transition-colors">
-              {t.products || 'Products'}
-            </Link>
-            <ChevronLeft className="w-4 h-4 rotate-180" />
-            <span className="text-white truncate max-w-[200px]">
+      <div className="pt-24 pb-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          {/* Breadcrumb */}
+          <nav className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 mb-8">
+            <a href={`/${locale}`} className="hover:text-brand-red">
+              {locale === 'ar' ? 'الرئيسية' : 'Home'}
+            </a>
+            <span>/</span>
+            <a href={`/${locale}/products`} className="hover:text-brand-red">
+              {locale === 'ar' ? 'المنتجات' : 'Products'}
+            </a>
+            <span>/</span>
+            <span className="text-gray-900 dark:text-white">
               {locale === 'ar' ? product.name_ar : product.name_en}
             </span>
-          </div>
-        </div>
-      </div>
+          </nav>
 
-      <div className="pb-12">
-        <div className="container-custom py-8">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* Images */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+            {/* Product Images */}
             <div className="space-y-4">
-              <div className="aspect-square rounded-xl overflow-hidden bg-dark-800 border border-dark-600">
-                {product.images?.[selectedImage] ? (
-                  <img 
-                    src={product.images[selectedImage]} 
+              <div className="aspect-square bg-white dark:bg-gray-800 rounded-2xl overflow-hidden">
+                {product.images && product.images.length > 0 ? (
+                  <img
+                    src={product.images[selectedImage]}
                     alt={locale === 'ar' ? product.name_ar : product.name_en}
                     className="w-full h-full object-cover"
-                    onError={(e) => { e.target.style.display = 'none'; }}
                   />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center text-gray-500">
-                    <span className="text-4xl">📦</span>
+                  <div className="w-full h-full flex items-center justify-center text-gray-400">
+                    <ShoppingCart className="w-24 h-24" />
                   </div>
                 )}
               </div>
               
-              {product.images?.length > 1 && (
+              {/* Thumbnail Gallery */}
+              {product.images && product.images.length > 1 && (
                 <div className="flex gap-3 overflow-x-auto pb-2">
-                  {product.images.map((img, index) => (
+                  {product.images.map((image, index) => (
                     <button
                       key={index}
                       onClick={() => setSelectedImage(index)}
                       className={cn(
-                        "w-20 h-20 rounded-lg overflow-hidden border-2 transition-all flex-shrink-0",
-                        selectedImage === index 
-                          ? "border-brand-red" 
-                          : "border-transparent hover:border-dark-500"
+                        "flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 transition-colors",
+                        selectedImage === index
+                          ? "border-brand-red"
+                          : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"
                       )}
                     >
-                      <img src={img} alt="" className="w-full h-full object-cover" onError={(e) => { e.target.style.display = 'none'; }} />
+                      <img
+                        src={image}
+                        alt={`${locale === 'ar' ? product.name_ar : product.name_en} - ${index + 1}`}
+                        className="w-full h-full object-cover"
+                      />
                     </button>
                   ))}
                 </div>
@@ -199,222 +324,450 @@ export default function ProductDetail({ params: { locale = 'en' } }) {
 
             {/* Product Info */}
             <div className="space-y-6">
-              <div>
-                {product.category_name && (
-                  <span className="inline-block px-3 py-1 bg-brand-red/10 text-brand-red text-sm rounded-full mb-3">
-                    {locale === 'ar' ? product.category_name_ar : product.category_name}
-                  </span>
-                )}
-                <h1 className="text-3xl font-bold text-white">
-                  {locale === 'ar' ? product.name_ar : product.name_en}
-                </h1>
-              </div>
-
-              {/* Rating */}
-              {product.rating > 0 && (
-                <div className="flex items-center gap-3">
-                  <div className="flex items-center gap-1">
-                    {[...Array(5)].map((_, i) => (
-                      <Star 
-                        key={i} 
-                        className={cn(
-                          "w-5 h-5",
-                          i < Math.round(product.rating) 
-                            ? "fill-yellow-400 text-yellow-400" 
-                            : "text-gray-600"
-                        )} 
-                      />
-                    ))}
-                  </div>
-                  <span className="text-gray-400">
-                    ({product.review_count || 0} {t.reviews || 'reviews'})
-                  </span>
-                </div>
-              )}
-
-              {/* Price */}
-              <div className="space-y-2">
-                <div className="flex items-baseline gap-3">
-                  <span className="text-3xl font-bold text-white">
-                    {formatPrice(currentPrice, locale)}
-                  </span>
-                  {hasDiscount && (
-                    <>
-                      <span className="text-xl text-gray-500 line-through">
-                        {formatPrice(product.original_price, locale)}
-                      </span>
-                      <span className="px-2 py-1 bg-brand-red text-white text-sm font-medium rounded-lg">
-                        -{discountPercent}%
-                      </span>
-                    </>
+              <div className="flex items-start justify-between">
+                <div>
+                  <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+                    {locale === 'ar' ? product.name_ar : product.name_en}
+                  </h1>
+                  {product.category_name_en && (
+                    <p className="text-brand-red font-medium">
+                      {locale === 'ar' ? product.category_name_ar : product.category_name_en}
+                    </p>
                   )}
                 </div>
                 
-                {/* Wholesale Pricing Info */}
-                {product.wholesale_price && product.min_order_quantity && (
-                  <div className="bg-dark-700/50 rounded-lg p-4 border border-dark-600">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm text-gray-400">{locale === 'ar' ? 'سعر التجزئة' : 'Retail Price'}</span>
-                      <span className="text-white font-medium">{formatPrice(product.unit_price || product.price, locale)}</span>
-                    </div>
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm text-gray-400">{locale === 'ar' ? 'سعر الجملة' : 'Wholesale Price'}</span>
-                      <span className="text-green-400 font-bold">{formatPrice(product.wholesale_price, locale)}</span>
-                    </div>
+                {/* Admin Edit Button */}
+                {isAdmin && (
+                  <Button
+                    onClick={handleEditClick}
+                    variant="outline"
+                    className="flex items-center gap-2"
+                  >
+                    <Edit className="w-4 h-4" />
+                    {locale === 'ar' ? 'تعديل' : 'Edit'}
+                  </Button>
+                )}
+              </div>
+
+              {/* Price Section */}
+              <div className="space-y-4">
+                {/* Retail Price - Always visible */}
+                <div className="flex items-baseline gap-3">
+                  <span className="text-3xl font-bold text-gray-900 dark:text-white">
+                    {formatPrice(getEffectivePrice(), locale)}
+                  </span>
+                  {shouldApplyWholesale && (
+                    <span className="text-lg text-gray-500 line-through">
+                      {formatPrice(product.unit_price, locale)}
+                    </span>
+                  )}
+                </div>
+
+                {/* Wholesale Price - Only for merchants and admins */}
+                {canSeeWholesalePrice && product.wholesale_price && (
+                  <div className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border border-green-200 dark:border-green-800 rounded-xl p-4">
                     <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-400">{locale === 'ar' ? 'الحد الأدنى للخصم' : 'Min Qty for Discount'}</span>
-                      <span className="text-white font-medium">{product.min_order_quantity} {locale === 'ar' ? 'قطعة' : 'units'}</span>
-                    </div>
-                    {quantity >= product.min_order_quantity ? (
-                      <div className="mt-3 flex items-center gap-2 text-green-400 text-sm">
-                        <Check className="w-4 h-4" />
-                        <span>{locale === 'ar' ? 'لقد حصلت على سعر الجملة' : 'You received the wholesale price'}</span>
+                      <div>
+                        <p className="text-sm font-medium text-green-800 dark:text-green-300">
+                          {locale === 'ar' ? 'سعر الجملة' : 'Wholesale Price'}
+                        </p>
+                        <p className="text-2xl font-bold text-green-600 dark:text-green-400">
+                          {formatPrice(product.wholesale_price, locale)}
+                        </p>
                       </div>
-                    ) : (
-                      <div className="mt-3 flex items-center gap-2 text-yellow-400 text-sm">
-                        <AlertCircle className="w-4 h-4" />
-                        <span>{locale === 'ar' ? 'اشترِ المزيد للحصول على الخصم' : 'Buy more to get a discount'}</span>
+                      {product.min_order_quantity && (
+                        <div className="text-right">
+                          <p className="text-xs text-green-700 dark:text-green-400">
+                            {locale === 'ar' ? 'الحد الأدنى' : 'Min. Qty'}
+                          </p>
+                          <p className="text-lg font-bold text-green-600 dark:text-green-400">
+                            {product.min_order_quantity}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                    {shouldApplyWholesale && (
+                      <div className="mt-3 pt-3 border-t border-green-200 dark:border-green-700">
+                        <p className="text-sm text-green-700 dark:text-green-300">
+                          {locale === 'ar' ? 'أنت توفر' : 'You save'}: {formatPrice(getSavings(), locale)}
+                        </p>
                       </div>
                     )}
                   </div>
                 )}
-              </div>
 
-              {/* Pricing Tiers */}
-              {product.pricing?.length > 1 && (
-                <div className="space-y-3">
-                  <h3 className="text-sm font-medium text-gray-400">
-                    {t.selectQuantity || 'Select Quantity'}
-                  </h3>
-                  <div className="flex flex-wrap gap-2">
-                    {product.pricing.map((tier) => (
-                      <button
-                        key={tier.id}
-                        onClick={() => setSelectedPricingTier(tier)}
-                        className={cn(
-                          "px-4 py-2 rounded-lg border transition-all",
-                          selectedPricingTier?.id === tier.id
-                            ? "border-brand-red bg-brand-red/10 text-brand-red"
-                            : "border-dark-600 text-gray-400 hover:border-dark-500"
-                        )}
-                      >
-                        <span className="font-medium">{tier.min_quantity}+</span>
-                        <span className="mx-2">-</span>
-                        <span className="font-bold">{formatPrice(tier.price, locale)}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
+                {/* Info for customers about wholesale */}
+                {isCustomer && product.wholesale_price && (
+                  <Tooltip
+                    content={locale === 'ar' 
+                      ? 'أسعار الجملة متاحة فقط للتجار. يرجى تسجيل الدخول بحساب تاجر لعرض أسعار الجملة.'
+                      : 'Wholesale prices are only available for merchants. Please sign in with a merchant account to view wholesale prices.'
+                    }
+                    position="top"
+                  >
+                    <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4 cursor-help">
+                      <div className="flex items-start gap-3">
+                        <Info className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />
+                        <div>
+                          <p className="text-sm font-medium text-blue-800 dark:text-blue-300">
+                            {locale === 'ar' ? 'أسعار الجملة متاحة' : 'Wholesale pricing available'}
+                          </p>
+                          <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
+                            {locale === 'ar' 
+                              ? 'تسجيل الدخول كتاجر للحصول على أسعار الجملة'
+                              : 'Sign in as a merchant to access wholesale prices'
+                            }
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </Tooltip>
+                )}
+              </div>
 
               {/* Stock Status */}
               <div className="flex items-center gap-2">
-                {product.stock > 0 ? (
-                  <>
-                    <div className="w-2 h-2 rounded-full bg-green-500" />
-                    <span className="text-green-400">
-                      {t.inStock || 'In Stock'} ({product.stock} {t.available || 'available'})
-                    </span>
-                  </>
-                ) : (
-                  <>
-                    <div className="w-2 h-2 rounded-full bg-red-500" />
-                    <span className="text-red-400">{t.outOfStock || 'Out of Stock'}</span>
-                  </>
+                <div className={cn(
+                  "w-3 h-3 rounded-full",
+                  product.stock > 0 ? "bg-green-500" : "bg-red-500"
+                )} />
+                <span className={cn(
+                  "font-medium",
+                  product.stock > 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"
+                )}>
+                  {product.stock > 0 
+                    ? (locale === 'ar' ? 'متوفر' : 'In Stock')
+                    : (locale === 'ar' ? 'غير متوفر' : 'Out of Stock')
+                  }
+                </span>
+                {product.stock > 0 && (
+                  <span className="text-gray-500 dark:text-gray-400">
+                    ({product.stock} {locale === 'ar' ? 'قطعة' : 'units'})
+                  </span>
                 )}
               </div>
 
               {/* Quantity Selector */}
-              {product.stock > 0 && (
-                <div className="flex items-center gap-4">
-                  <span className="text-gray-400">{t.quantity || 'Quantity'}:</span>
-                  <div className="flex items-center border border-dark-600 rounded-lg">
-                    <button
-                      onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                      className="p-3 text-gray-400 hover:text-white transition-colors"
-                    >
-                      <Minus className="w-5 h-5" />
-                    </button>
-                    <span className="px-4 text-white font-medium">{quantity}</span>
-                    <button
-                      onClick={() => setQuantity(Math.min(product.stock, quantity + 1))}
-                      className="p-3 text-gray-400 hover:text-white transition-colors"
-                    >
-                      <Plus className="w-5 h-5" />
-                    </button>
-                  </div>
+              <div className="flex items-center gap-4">
+                <span className="text-gray-700 dark:text-gray-300 font-medium">
+                  {locale === 'ar' ? 'الكمية' : 'Quantity'}:
+                </span>
+                <div className="flex items-center border border-gray-300 dark:border-gray-600 rounded-lg">
+                  <button
+                    onClick={() => handleQuantityChange(-1)}
+                    disabled={quantity <= 1}
+                    className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    -
+                  </button>
+                  <span className="px-4 py-2 text-gray-900 dark:text-white font-medium min-w-[60px] text-center">
+                    {quantity}
+                  </span>
+                  <button
+                    onClick={() => handleQuantityChange(1)}
+                    disabled={quantity >= product.stock}
+                    className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    +
+                  </button>
+                </div>
+              </div>
+
+              {/* Wholesale Quantity Warning */}
+              {canSeeWholesalePrice && product.wholesale_price && product.min_order_quantity && quantity < product.min_order_quantity && (
+                <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3">
+                  <p className="text-sm text-yellow-800 dark:text-yellow-300">
+                    {locale === 'ar' 
+                      ? `أضف ${product.min_order_quantity - quantity} قطع إضافية للحصول على سعر الجملة`
+                      : `Add ${product.min_order_quantity - quantity} more units to get wholesale price`
+                    }
+                  </p>
                 </div>
               )}
 
               {/* Action Buttons */}
-              <div className="flex gap-4 pt-4">
+              <div className="flex gap-4">
                 <Button
                   onClick={handleAddToCart}
                   disabled={product.stock === 0 || isAddingToCart}
-                  className="flex-1 flex items-center justify-center gap-2"
-                  size="lg"
+                  className="flex-1"
                 >
-                  <ShoppingCart className="w-5 h-5" />
-                  {isAddingToCart ? t.adding : (t.addToCart || 'Add to Cart')}
+                  <ShoppingCart className="w-5 h-5 mr-2" />
+                  {isAddingToCart 
+                    ? (locale === 'ar' ? 'جاري الإضافة...' : 'Adding...')
+                    : (locale === 'ar' ? 'أضف إلى السلة' : 'Add to Cart')
+                  }
                 </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => setIsWishlisted(!isWishlisted)}
-                  className="px-4"
-                  size="lg"
-                >
-                  <Heart className={cn("w-5 h-5", isWishlisted && "fill-brand-red text-brand-red")} />
+                <Button variant="outline" className="px-4">
+                  <Heart className="w-5 h-5" />
+                </Button>
+                <Button variant="outline" className="px-4">
+                  <Share2 className="w-5 h-5" />
                 </Button>
               </div>
 
-              {/* Features */}
-              <div className="grid grid-cols-3 gap-4 pt-6 border-t border-dark-700">
-                <div className="text-center">
-                  <Shield className="w-6 h-6 mx-auto text-brand-red mb-2" />
-                  <span className="text-sm text-gray-400">{t.securePayment || 'Secure Payment'}</span>
-                </div>
-                <div className="text-center">
-                  <Truck className="w-6 h-6 mx-auto text-brand-red mb-2" />
-                  <span className="text-sm text-gray-400">{t.fastDelivery || 'Fast Delivery'}</span>
-                </div>
-                <div className="text-center">
-                  <RotateCcw className="w-6 h-6 mx-auto text-brand-red mb-2" />
-                  <span className="text-sm text-gray-400">{t.easyReturns || 'Easy Returns'}</span>
-                </div>
+              {/* Product Description */}
+              <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">
+                  {locale === 'ar' ? 'الوصف' : 'Description'}
+                </h3>
+                <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
+                  {locale === 'ar' ? product.description_ar : product.description_en}
+                </p>
               </div>
             </div>
           </div>
-
-          {/* Description */}
-          <div className="mt-12 card p-6 bg-dark-800 border-dark-600">
-            <h2 className="text-xl font-semibold text-white mb-4">
-              {t.description || 'Description'}
-            </h2>
-            <div className="prose prose-invert max-w-none">
-              <p className="text-gray-300 whitespace-pre-wrap">
-                {locale === 'ar' ? product.description_ar : product.description_en}
-              </p>
-            </div>
-          </div>
-
-          {/* Specifications */}
-          {product.specifications && Object.keys(product.specifications).length > 0 && (
-            <div className="mt-6 card p-6 bg-dark-800 border-dark-600">
-              <h2 className="text-xl font-semibold text-white mb-4">
-                {t.specifications || 'Specifications'}
-              </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {Object.entries(product.specifications).map(([key, value]) => (
-                  <div key={key} className="flex justify-between py-2 border-b border-dark-700">
-                    <span className="text-gray-400">{key}</span>
-                    <span className="text-white">{value}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
         </div>
       </div>
+
+      {/* Admin Edit Modal */}
+      {showEditModal && isAdmin && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden">
+            <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+                  {locale === 'ar' ? 'تعديل المنتج' : 'Edit Product'}
+                </h2>
+                <button 
+                  onClick={() => setShowEditModal(false)}
+                  className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+            <form onSubmit={handleUpdateProduct} className="p-6 overflow-y-auto max-h-[calc(90vh-140px)]">
+              <div className="space-y-6">
+                {/* Image Upload */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    {locale === 'ar' ? 'صور المنتج' : 'Product Images'}
+                  </label>
+                  <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl p-4">
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      onChange={handleImageUpload}
+                      className="hidden"
+                    />
+                    
+                    {imagePreviews.length > 0 && (
+                      <div className="grid grid-cols-4 gap-3 mb-4">
+                        {imagePreviews.map((preview, index) => (
+                          <div key={index} className="relative aspect-square rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700">
+                            <img src={preview} alt={`Preview ${index + 1}`} className="w-full h-full object-cover" />
+                            <button
+                              type="button"
+                              onClick={() => removeImage(index)}
+                              className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={isUploading}
+                      className="w-full py-6 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl hover:border-brand-red hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex flex-col items-center gap-2"
+                    >
+                      {isUploading ? (
+                        <div className="w-6 h-6 border-2 border-brand-red border-t-transparent rounded-full animate-spin" />
+                      ) : (
+                        <>
+                          <Upload className="w-8 h-8 text-gray-400" />
+                          <span className="text-sm text-gray-500 dark:text-gray-400">
+                            {locale === 'ar' ? 'انقر لإضافة صور' : 'Click to add images'}
+                          </span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+                
+                {/* Name Fields */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      {locale === 'ar' ? 'الاسم (إنجليزي)' : 'Name (English)'} *
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.name_en}
+                      onChange={(e) => setFormData({ ...formData, name_en: e.target.value })}
+                      className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-red focus:border-transparent"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      {locale === 'ar' ? 'الاسم (عربي)' : 'Name (Arabic)'} *
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.name_ar}
+                      onChange={(e) => setFormData({ ...formData, name_ar: e.target.value })}
+                      className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-red focus:border-transparent"
+                      required
+                    />
+                  </div>
+                </div>
+
+                {/* Description Fields */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      {locale === 'ar' ? 'الوصف (إنجليزي)' : 'Description (English)'}
+                    </label>
+                    <textarea
+                      value={formData.description_en}
+                      onChange={(e) => setFormData({ ...formData, description_en: e.target.value })}
+                      rows={3}
+                      className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-red focus:border-transparent"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      {locale === 'ar' ? 'الوصف (عربي)' : 'Description (Arabic)'}
+                    </label>
+                    <textarea
+                      value={formData.description_ar}
+                      onChange={(e) => setFormData({ ...formData, description_ar: e.target.value })}
+                      rows={3}
+                      className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-red focus:border-transparent"
+                    />
+                  </div>
+                </div>
+
+                {/* Price Fields */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      {locale === 'ar' ? 'سعر التجزئة' : 'Retail Price'} *
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={formData.unit_price}
+                      onChange={(e) => setFormData({ ...formData, unit_price: e.target.value })}
+                      className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-red focus:border-transparent"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      {locale === 'ar' ? 'سعر الجملة' : 'Wholesale Price'}
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={formData.wholesale_price}
+                      onChange={(e) => setFormData({ ...formData, wholesale_price: e.target.value })}
+                      className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-red focus:border-transparent"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      {locale === 'ar' ? 'الحد الأدنى للطلب' : 'Min. Order Qty'}
+                    </label>
+                    <input
+                      type="number"
+                      value={formData.min_order_quantity}
+                      onChange={(e) => setFormData({ ...formData, min_order_quantity: e.target.value })}
+                      className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-red focus:border-transparent"
+                    />
+                  </div>
+                </div>
+
+                {/* Stock and Category */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      {locale === 'ar' ? 'المخزون' : 'Stock'} *
+                    </label>
+                    <input
+                      type="number"
+                      value={formData.stock}
+                      onChange={(e) => setFormData({ ...formData, stock: e.target.value })}
+                      className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-red focus:border-transparent"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      {locale === 'ar' ? 'الفئة' : 'Category'}
+                    </label>
+                    <select
+                      value={formData.category_id}
+                      onChange={(e) => setFormData({ ...formData, category_id: e.target.value })}
+                      className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-red focus:border-transparent"
+                    >
+                      <option value="">{locale === 'ar' ? 'اختر الفئة' : 'Select category'}</option>
+                      {categories.map((cat) => (
+                        <option key={cat.id} value={cat.id}>
+                          {locale === 'ar' ? cat.name_ar : cat.name_en}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                {/* Barcode and Warehouse */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      {locale === 'ar' ? 'الباركود' : 'Barcode'}
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.barcode}
+                      onChange={(e) => setFormData({ ...formData, barcode: e.target.value })}
+                      className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-red focus:border-transparent"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      {locale === 'ar' ? 'موقع المستودع' : 'Warehouse Location'}
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.warehouse_location}
+                      onChange={(e) => setFormData({ ...formData, warehouse_location: e.target.value })}
+                      className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-red focus:border-transparent"
+                    />
+                  </div>
+                </div>
+              </div>
+              
+              <div className="flex gap-3 pt-6 border-t border-gray-200 dark:border-gray-700 mt-6">
+                <button
+                  type="button"
+                  onClick={() => setShowEditModal(false)}
+                  className="flex-1 px-4 py-2.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors font-medium"
+                >
+                  {locale === 'ar' ? 'إلغاء' : 'Cancel'}
+                </button>
+                <button 
+                  type="submit" 
+                  disabled={isUpdating}
+                  className="flex-1 px-4 py-2.5 bg-brand-red text-white rounded-lg hover:bg-brand-red/90 transition-colors font-medium disabled:opacity-50"
+                >
+                  {isUpdating 
+                    ? (locale === 'ar' ? 'جاري التحديث...' : 'Updating...')
+                    : (locale === 'ar' ? 'تحديث المنتج' : 'Update Product')
+                  }
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       <Footer locale={locale} dict={dict} />
     </div>

@@ -9,7 +9,19 @@ ADD COLUMN IF NOT EXISTS shipping_cost DECIMAL(10, 2) DEFAULT 0,
 ADD COLUMN IF NOT EXISTS is_large_order BOOLEAN DEFAULT FALSE;
 
 -- Update status constraint to include new statuses
-ALTER TABLE orders DROP CONSTRAINT IF EXISTS orders_status_check;
+-- First, drop the existing constraint if it exists (using DO block to handle if it doesn't)
+DO $$
+BEGIN
+    IF EXISTS (
+        SELECT 1 FROM information_schema.table_constraints 
+        WHERE constraint_name = 'orders_status_check' 
+        AND table_name = 'orders'
+    ) THEN
+        ALTER TABLE orders DROP CONSTRAINT orders_status_check;
+    END IF;
+END $$;
+
+-- Add the new status constraint
 ALTER TABLE orders ADD CONSTRAINT orders_status_check 
 CHECK (status IN ('pending', 'confirmed', 'contacted', 'processing', 'shipped', 'delivered', 'cancelled', 'under_review'));
 

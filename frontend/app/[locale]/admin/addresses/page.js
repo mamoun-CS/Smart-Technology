@@ -3,13 +3,13 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { MapPin, Search, Eye, Trash2, Phone, User, Mail, Pencil } from 'lucide-react';
-import { useAuthStore } from '../../../../store/authStore';
-import { adminAPI } from '../../../../lib/api';
-import { getDictionary } from '../../../../i18n';
-import { formatDate, cn } from '../../../../lib/utils';
+import { MapPin, Search, Eye, Trash2, Phone, User, Mail, Pencil } from '@/components/icons';
+import { useAuthStore } from '@/store';
+import { adminAPI } from '@/lib';
+import { getDictionary } from '@/i18n';
+import { formatDate, cn } from '@/lib';
 import { toast } from 'sonner';
-import Navbar from '../../../../components/Navbar';
+import { Navbar } from '@/components';
 
 export default function AddressesManagement({ params: { locale = 'en' } }) {
   const [addresses, setAddresses] = useState([]);

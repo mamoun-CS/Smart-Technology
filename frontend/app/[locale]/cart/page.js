@@ -1,117 +1,78 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import Link from 'next/link';
-import Image from 'next/image';
-import { Trash2, Plus, Minus, ShoppingBag, ArrowRight, Check, AlertCircle, MapPin, Truck, Store } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useCartStore } from '../../../store/cartStore';
-import { useAuthStore } from '../../../store/authStore';
-import { getDictionary } from '../../../i18n';
-import { formatPrice, cn } from '../../../lib/utils';
+import { useAuthStore } from '@/store';
+import { cartAPI } from '@/lib';
+import { getDictionary } from '@/i18n';
+import { formatPrice, cn } from '@/lib';
 import { toast } from 'sonner';
-import Navbar from '../../../components/Navbar';
-import Footer from '../../../components/ui/Footer';
-import Button from '../../../components/ui/Button';
+import { Navbar } from '@/components';
+import { Footer } from '@/components';
+import { Button } from '@/components';
+import { Loading } from '@/components';
+import { Tooltip } from '@/components';
+import { Trash2, Plus, Minus, ShoppingCart, ArrowRight, Info, Tag } from '@/components/icons';
 
 export default function CartPage({ params: { locale = 'en' } }) {
-  const [isLoading, setIsLoading] = useState(true);
-  const [selectedCity, setSelectedCity] = useState('');
-  const [deliveryMethod, setDeliveryMethod] = useState('');
-  const [shippingCost, setShippingCost] = useState(null);
-  const [isLargeOrder, setIsLargeOrder] = useState(false);
-  const [isCalculatingShipping, setIsCalculatingShipping] = useState(false);
-  
   const router = useRouter();
   const dict = getDictionary(locale);
   const t = dict?.common || {};
   const cartT = dict?.cart || {};
   
-  const { items, total, fetchCart, updateItem, removeItem, isLoading: cartLoading } = useCartStore();
-  const { isAuthenticated } = useAuthStore();
-
-  // Available cities (from shipping areas)
-  const cities = [
-    { id: 'ramallah', name_en: 'Ramallah', name_ar: 'رام الله' },
-    { id: 'nablus', name_en: 'Nablus', name_ar: 'نابلس' },
-    { id: 'hebron', name_en: 'Hebron', name_ar: 'الخليل' },
-    { id: 'gaza', name_en: 'Gaza Strip', name_ar: 'قطاع غزة' },
-    { id: 'jerusalem', name_en: 'Jerusalem', name_ar: 'القدس' }
-  ];
+  const { user, isAuthenticated } = useAuthStore();
+  const [cart, setCart] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [updatingItemId, setUpdatingItemId] = useState(null);
 
   useEffect(() => {
     if (isAuthenticated) {
       fetchCart();
+    } else {
+      setIsLoading(false);
     }
-    setIsLoading(false);
-  }, [isAuthenticated, fetchCart]);
+  }, [isAuthenticated]);
 
-  // Calculate shipping when city or delivery method changes
-  useEffect(() => {
-    const calculateShipping = async () => {
-      if (!selectedCity || !deliveryMethod) {
-        setShippingCost(null);
-        return;
-      }
-
-      setIsCalculatingShipping(true);
-      try {
-        const response = await fetch(
-          `/api/orders/calculate/shipping?city=${encodeURIComponent(selectedCity)}&delivery_method=${deliveryMethod}`
-        );
-        const data = await response.json();
-        
-        if (data.success) {
-          setShippingCost(data.shipping_cost);
-        }
-      } catch (error) {
-        console.error('Error calculating shipping:', error);
-      } finally {
-        setIsCalculatingShipping(false);
-      }
-    };
-
-    calculateShipping();
-  }, [selectedCity, deliveryMethod]);
-
-  // Check if order is large
-  useEffect(() => {
-    const checkLargeOrder = async () => {
-      const totalQuantity = items.reduce((sum, item) => sum + item.quantity, 0);
-      
-      if (totalQuantity > 0) {
-        try {
-          const response = await fetch(
-            `/api/orders/check/large-order?total_quantity=${totalQuantity}`
-          );
-          const data = await response.json();
-          
-          if (data.success) {
-            setIsLargeOrder(data.is_large_order);
-          }
-        } catch (error) {
-          console.error('Error checking large order:', error);
-        }
-      }
-    };
-
-    checkLargeOrder();
-  }, [items]);
-
-  const handleUpdateQuantity = async (productId, quantity) => {
+  const fetchCart = async () => {
     try {
-      await updateItem(productId, quantity);
+      setIsLoading(true);
+      const response = await cartAPI.get();
+      setCart(response.data);
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to update quantity');
+      console.error('Error fetching cart:', error);
+      toast.error(locale === 'ar' ? 'فشل تحميل السلة' : 'Failed to load cart');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleUpdateQuantity = async (productId, newQuantity) => {
+    if (newQuantity < 1) return;
+    
+    try {
+      setUpdatingItemId(productId);
+      await cartAPI.updateItem(productId, newQuantity);
+      await fetchCart();
+      toast.success(locale === 'ar' ? 'تم تحديث الكمية' : 'Quantity updated');
+    } catch (error) {
+      console.error('Error updating quantity:', error);
+      toast.error(locale === 'ar' ? 'فشل تحديث الكمية' : 'Failed to update quantity');
+    } finally {
+      setUpdatingItemId(null);
     }
   };
 
   const handleRemoveItem = async (productId) => {
     try {
-      await removeItem(productId);
-      toast.success('Item removed from cart');
+      setUpdatingItemId(productId);
+      await cartAPI.removeItem(productId);
+      await fetchCart();
+      toast.success(locale === 'ar' ? 'تمت الإزالة من السلة' : 'Item removed from cart');
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to remove item');
+      console.error('Error removing item:', error);
+      toast.error(locale === 'ar' ? 'فشل إزالة المنتج' : 'Failed to remove item');
+    } finally {
+      setUpdatingItemId(null);
     }
   };
 
@@ -120,42 +81,96 @@ export default function CartPage({ params: { locale = 'en' } }) {
       router.push(`/${locale}/login`);
       return;
     }
-    
-    if (!selectedCity || !deliveryMethod) {
-      toast.error(locale === 'ar' ? 'الرجاء اختيار المدينة وطريقة التوصيل' : 'Please select city and delivery method');
-      return;
-    }
-    
-    if (isLargeOrder) {
-      toast.info(locale === 'ar' ? 'طلبك كبير. سنتواصل معك بعد تأكيد العنوان' : 'Your order is large. We will contact you after confirming your address.');
-    }
-    
-    router.push(`/${locale}/checkout?city=${encodeURIComponent(selectedCity)}&delivery_method=${deliveryMethod}`);
+    router.push(`/${locale}/checkout`);
   };
 
-  // Calculate totals
-  const subtotal = total || 0;
-  const totalQuantity = items.reduce((sum, item) => sum + item.quantity, 0);
-  const grandTotal = shippingCost !== null ? subtotal + shippingCost : subtotal;
+  // Check if user can see wholesale price
+  const canSeeWholesalePrice = user?.role === 'admin' || user?.role === 'merchant';
+  const isCustomer = user?.role === 'customer' || !user?.role;
 
-  if (isLoading || cartLoading) {
+  // Calculate totals
+  const calculateSubtotal = () => {
+    if (!cart?.items) return 0;
+    return cart.items.reduce((total, item) => {
+      const price = canSeeWholesalePrice && item.wholesale_price && item.quantity >= (item.min_order_quantity || 1)
+        ? item.wholesale_price
+        : (item.unit_price || item.price);
+      return total + (price * item.quantity);
+    }, 0);
+  };
+
+  const calculateSavings = () => {
+    if (!cart?.items || !canSeeWholesalePrice) return 0;
+    return cart.items.reduce((total, item) => {
+      if (item.wholesale_price && item.quantity >= (item.min_order_quantity || 1)) {
+        const retailTotal = (item.unit_price || item.price) * item.quantity;
+        const wholesaleTotal = item.wholesale_price * item.quantity;
+        return total + (retailTotal - wholesaleTotal);
+      }
+      return total;
+    }, 0);
+  };
+
+  const subtotal = calculateSubtotal();
+  const savings = calculateSavings();
+
+  if (isLoading) {
     return (
-      <div className="min-h-screen bg-dark-950">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
         <Navbar locale={locale} dict={dict} />
         <div className="pt-24 pb-12">
-          <div className="container-custom">
-            <div className="skeleton h-8 w-48 mb-8" />
-            <div className="space-y-4">
-              {[...Array(3)].map((_, i) => (
-                <div key={i} className="card p-4 flex gap-4 bg-dark-800 border-dark-600">
-                  <div className="skeleton h-24 w-24" />
-                  <div className="flex-1">
-                    <div className="skeleton h-4 w-3/4 mb-2" />
-                    <div className="skeleton h-4 w-1/2" />
-                  </div>
-                </div>
-              ))}
-            </div>
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <Loading />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+        <Navbar locale={locale} dict={dict} />
+        <div className="pt-24 pb-12">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <ShoppingCart className="w-16 h-16 mx-auto text-gray-400 mb-4" />
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+              {locale === 'ar' ? 'سلة التسوق فارغة' : 'Your cart is empty'}
+            </h1>
+            <p className="text-gray-600 dark:text-gray-400 mb-6">
+              {locale === 'ar' 
+                ? 'قم بتسجيل الدخول لعرض سلة التسوق الخاصة بك'
+                : 'Sign in to view your cart'
+              }
+            </p>
+            <Button onClick={() => router.push(`/${locale}/login`)}>
+              {locale === 'ar' ? 'تسجيل الدخول' : 'Sign In'}
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!cart?.items || cart.items.length === 0) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+        <Navbar locale={locale} dict={dict} />
+        <div className="pt-24 pb-12">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <ShoppingCart className="w-16 h-16 mx-auto text-gray-400 mb-4" />
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+              {locale === 'ar' ? 'سلة التسوق فارغة' : 'Your cart is empty'}
+            </h1>
+            <p className="text-gray-600 dark:text-gray-400 mb-6">
+              {locale === 'ar' 
+                ? 'ابدأ التسوق لإضافة منتجات إلى سلتك'
+                : 'Start shopping to add items to your cart'
+              }
+            </p>
+            <Button onClick={() => router.push(`/${locale}/products`)}>
+              {locale === 'ar' ? 'تصفح المنتجات' : 'Browse Products'}
+            </Button>
           </div>
         </div>
       </div>
@@ -163,322 +178,267 @@ export default function CartPage({ params: { locale = 'en' } }) {
   }
 
   return (
-    <div className="min-h-screen bg-dark-950">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <Navbar locale={locale} dict={dict} />
       
-      {/* Header */}
-      <div className="pt-24 pb-8 bg-dark-900">
-        <div className="container-custom">
-          <h1 className="text-3xl md:text-4xl font-bold text-white">
-            {cartT.title || 'Shopping Cart'}
+      <div className="pt-24 pb-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-8">
+            {locale === 'ar' ? 'سلة التسوق' : 'Shopping Cart'}
           </h1>
-          <p className="text-gray-400 mt-2">
-            {items.length} {items.length === 1 ? 'item' : 'items'} in your cart
-          </p>
-        </div>
-      </div>
 
-      <div className="pb-12">
-        <div className="container-custom">
-          {items.length === 0 ? (
-            <div className="text-center py-20 bg-dark-800 rounded-xl border border-dark-600">
-              <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-dark-700 flex items-center justify-center">
-                <ShoppingBag className="w-10 h-10 text-gray-500" />
-              </div>
-              <h2 className="text-xl font-semibold text-white mb-2">
-                {cartT.empty || 'Your cart is empty'}
-              </h2>
-              <p className="text-gray-400 mb-6">
-                Looks like you haven't added any items to your cart yet.
-              </p>
-              <Link href={`/${locale}/products`}>
-                <Button>
-                  {cartT.continueShopping || 'Continue Shopping'}
-                  <ArrowRight className="w-5 h-5" />
-                </Button>
-              </Link>
-            </div>
-          ) : (
-            <div className="flex flex-col lg:flex-row gap-8">
-              {/* Cart Items */}
-              <div className="flex-1">
-                <div className="space-y-4">
-                  {items.map((item) => (
-                    <div key={item.id} className="card p-4 flex gap-4 bg-dark-800 border-dark-600">
-                      <div className="relative w-24 h-24 flex-shrink-0 bg-dark-700 rounded-lg overflow-hidden">
-                        {item.images?.[0] ? (
-                          <Image 
-                            src={item.images[0]} 
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Cart Items */}
+            <div className="lg:col-span-2 space-y-4">
+              {cart.items.map((item) => {
+                const itemPrice = canSeeWholesalePrice && item.wholesale_price && item.quantity >= (item.min_order_quantity || 1)
+                  ? item.wholesale_price
+                  : (item.unit_price || item.price);
+                const isWholesaleApplied = canSeeWholesalePrice && item.wholesale_price && item.quantity >= (item.min_order_quantity || 1);
+                
+                return (
+                  <div
+                    key={item.id}
+                    className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700"
+                  >
+                    <div className="flex gap-4">
+                      {/* Product Image */}
+                      <div className="w-24 h-24 flex-shrink-0 bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden">
+                        {item.images && item.images.length > 0 ? (
+                          <img
+                            src={item.images[0]}
                             alt={locale === 'ar' ? item.name_ar : item.name_en}
-                            fill
-                            className="object-cover"
-                            unoptimized
+                            className="w-full h-full object-cover"
                           />
                         ) : (
-                          <div className="flex items-center justify-center h-full">
-                            <span className="text-3xl">📦</span>
+                          <div className="w-full h-full flex items-center justify-center text-gray-400">
+                            <ShoppingCart className="w-8 h-8" />
                           </div>
                         )}
                       </div>
+
+                      {/* Product Info */}
                       <div className="flex-1 min-w-0">
-                        <h3 className="font-semibold text-white line-clamp-1">
+                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white truncate">
                           {locale === 'ar' ? item.name_ar : item.name_en}
                         </h3>
-                        <div className="flex items-center gap-2 mt-1">
-                          <p className="text-brand-red font-bold">
-                            {formatPrice(item.price, locale)}
-                          </p>
-                          {item.is_wholesale_applied && (
-                            <span className="px-2 py-0.5 bg-green-500/20 text-green-400 text-xs rounded-full">
-                              {locale === 'ar' ? 'جملة' : 'Wholesale'}
-                            </span>
-                          )}
-                        </div>
                         
-                        {/* Wholesale pricing info */}
-                        {item.wholesale_price && item.min_order_quantity && (
-                          <div className="mt-2 text-xs">
-                            {item.is_wholesale_applied ? (
-                              <div className="flex items-center gap-1 text-green-400">
-                                <Check className="w-3 h-3" />
-                                <span>{locale === 'ar' ? 'لقد حصلت على سعر الجملة' : 'You received the wholesale price'}</span>
-                              </div>
-                            ) : (
-                              <div className="flex items-center gap-1 text-yellow-400">
-                                <AlertCircle className="w-3 h-3" />
-                                <span>
-                                  {locale === 'ar' 
-                                    ? `اشترِ ${item.min_order_quantity - item.quantity} قطع إضافية للحصول على الخصم`
-                                    : `Buy ${item.min_order_quantity - item.quantity} more to get a discount`
-                                  }
+                        {/* Price Display */}
+                        <div className="mt-2 space-y-1">
+                          {/* Retail Price */}
+                          <div className="flex items-center gap-2">
+                            <span className="text-gray-600 dark:text-gray-400">
+                              {locale === 'ar' ? 'سعر التجزئة:' : 'Retail:'}
+                            </span>
+                            <span className={cn(
+                              "font-medium",
+                              isWholesaleApplied ? "line-through text-gray-400" : "text-gray-900 dark:text-white"
+                            )}>
+                              {formatPrice(item.unit_price || item.price, locale)}
+                            </span>
+                          </div>
+                          
+                          {/* Wholesale Price - Only for merchants/admins */}
+                          {canSeeWholesalePrice && item.wholesale_price && (
+                            <div className="flex items-center gap-2">
+                              <span className="text-gray-600 dark:text-gray-400">
+                                {locale === 'ar' ? 'سعر الجملة:' : 'Wholesale:'}
+                              </span>
+                              <span className={cn(
+                                "font-medium",
+                                isWholesaleApplied ? "text-green-600 dark:text-green-400" : "text-gray-900 dark:text-white"
+                              )}>
+                                {formatPrice(item.wholesale_price, locale)}
+                              </span>
+                              {item.min_order_quantity && (
+                                <span className="text-xs text-gray-500 dark:text-gray-400">
+                                  (min: {item.min_order_quantity})
                                 </span>
-                              </div>
+                              )}
+                            </div>
+                          )}
+                          
+                          {/* Applied Price */}
+                          <div className="flex items-center gap-2 pt-1 border-t border-gray-200 dark:border-gray-700">
+                            <span className="text-gray-600 dark:text-gray-400">
+                              {locale === 'ar' ? 'السعر المطبق:' : 'Applied:'}
+                            </span>
+                            <span className="text-lg font-bold text-gray-900 dark:text-white">
+                              {formatPrice(itemPrice, locale)}
+                            </span>
+                            {isWholesaleApplied && (
+                              <span className="px-2 py-0.5 bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 text-xs rounded-full">
+                                {locale === 'ar' ? 'جملة' : 'Wholesale'}
+                              </span>
                             )}
                           </div>
-                        )}
-                        
-                        <div className="flex items-center justify-between mt-3">
-                          <div className="flex items-center gap-1">
+                        </div>
+
+                        {/* Quantity Controls */}
+                        <div className="mt-4 flex items-center gap-4">
+                          <div className="flex items-center border border-gray-300 dark:border-gray-600 rounded-lg">
                             <button
                               onClick={() => handleUpdateQuantity(item.product_id, item.quantity - 1)}
-                              disabled={item.quantity <= 1}
-                              className="p-2 rounded-lg bg-dark-700 hover:bg-dark-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                              disabled={updatingItemId === item.product_id || item.quantity <= 1}
+                              className="px-3 py-1 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                              <Minus className="w-4 h-4 text-gray-300" />
+                              <Minus className="w-4 h-4" />
                             </button>
-                            <span className="w-10 text-center font-medium text-white">{item.quantity}</span>
+                            <span className="px-4 py-1 text-gray-900 dark:text-white font-medium min-w-[50px] text-center">
+                              {item.quantity}
+                            </span>
                             <button
                               onClick={() => handleUpdateQuantity(item.product_id, item.quantity + 1)}
-                              disabled={item.quantity >= item.stock}
-                              className="p-2 rounded-lg bg-dark-700 hover:bg-dark-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                              disabled={updatingItemId === item.product_id}
+                              className="px-3 py-1 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                              <Plus className="w-4 h-4 text-gray-300" />
+                              <Plus className="w-4 h-4" />
                             </button>
                           </div>
+                          
                           <button
                             onClick={() => handleRemoveItem(item.product_id)}
-                            className="p-2 text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+                            disabled={updatingItemId === item.product_id}
+                            className="text-red-500 hover:text-red-600 disabled:opacity-50 disabled:cursor-not-allowed"
                           >
                             <Trash2 className="w-5 h-5" />
                           </button>
                         </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
 
-              {/* Order Summary */}
-              <div className="w-full lg:w-96">
-                <div className="card p-6 sticky top-24 bg-dark-800 border-dark-600">
-                  <h2 className="text-lg font-semibold text-white mb-6">
-                    {dict?.checkout?.orderSummary || 'Order Summary'}
-                  </h2>
-                  
-                  {/* Location Selection */}
-                  <div className="mb-6 p-4 bg-dark-700 rounded-lg">
-                    <h3 className="text-sm font-medium text-gray-300 mb-3 flex items-center gap-2">
-                      <MapPin className="w-4 h-4" />
-                      {locale === 'ar' ? 'اختر الموقع' : 'Select Location'}
-                    </h3>
-                    
-                    {/* City Selection */}
-                    <div className="mb-4">
-                      <label className="block text-xs text-gray-400 mb-2">
-                        {locale === 'ar' ? 'المدينة' : 'City'}
-                      </label>
-                      <select
-                        value={selectedCity}
-                        onChange={(e) => setSelectedCity(e.target.value)}
-                        className="w-full p-2 bg-dark-600 border border-dark-500 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-brand-red"
-                      >
-                        <option value="">
-                          {locale === 'ar' ? 'اختر المدينة' : 'Select City'}
-                        </option>
-                        {cities.map((city) => (
-                          <option key={city.id} value={city.name_en}>
-                            {locale === 'ar' ? city.name_ar : city.name_en}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    
-                    {/* Delivery Method */}
-                    <div>
-                      <label className="block text-xs text-gray-400 mb-2">
-                        {locale === 'ar' ? 'طريقة التوصيل' : 'Delivery Method'}
-                      </label>
-                      <div className="grid grid-cols-2 gap-2">
-                        <button
-                          onClick={() => setDeliveryMethod('shipping')}
-                          className={cn(
-                            "p-3 rounded-lg border-2 transition-all flex flex-col items-center gap-2",
-                            deliveryMethod === 'shipping'
-                              ? "border-brand-red bg-brand-red/10"
-                              : "border-dark-500 hover:border-dark-400"
-                          )}
-                        >
-                          <Truck className={cn(
-                            "w-5 h-5",
-                            deliveryMethod === 'shipping' ? "text-brand-red" : "text-gray-400"
-                          )} />
-                          <span className={cn(
-                            "text-xs font-medium",
-                            deliveryMethod === 'shipping' ? "text-white" : "text-gray-400"
-                          )}>
-                            {locale === 'ar' ? 'شحن' : 'Shipping'}
-                          </span>
-                        </button>
-                        <button
-                          onClick={() => setDeliveryMethod('pickup')}
-                          className={cn(
-                            "p-3 rounded-lg border-2 transition-all flex flex-col items-center gap-2",
-                            deliveryMethod === 'pickup'
-                              ? "border-brand-red bg-brand-red/10"
-                              : "border-dark-500 hover:border-dark-400"
-                          )}
-                        >
-                          <Store className={cn(
-                            "w-5 h-5",
-                            deliveryMethod === 'pickup' ? "text-brand-red" : "text-gray-400"
-                          )} />
-                          <span className={cn(
-                            "text-xs font-medium",
-                            deliveryMethod === 'pickup' ? "text-white" : "text-gray-400"
-                          )}>
-                            {locale === 'ar' ? 'استلام من المتجر' : 'In-Store Pickup'}
-                          </span>
-                        </button>
+                        {/* Wholesale Info for Customers */}
+                        {isCustomer && item.wholesale_price && (
+                          <Tooltip
+                            content={locale === 'ar' 
+                              ? 'أسعار الجملة متاحة فقط للتجار. قم بتسجيل الدخول كتاجر للحصول على أسعار الجملة.'
+                              : 'Wholesale prices are only available for merchants. Sign in as a merchant to get wholesale prices.'
+                            }
+                          >
+                            <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg cursor-help">
+                              <div className="flex items-start gap-2">
+                                <Info className="w-4 h-4 text-blue-500 flex-shrink-0 mt-0.5" />
+                                <p className="text-xs text-blue-700 dark:text-blue-300">
+                                  {locale === 'ar' 
+                                    ? 'أسعار الجملة متاحة للتجار. سجل كتاجر للحصول على أسعار أفضل.'
+                                    : 'Wholesale prices available for merchants. Register as a merchant for better prices.'
+                                  }
+                                </p>
+                              </div>
+                            </div>
+                          </Tooltip>
+                        )}
+
+                        {/* Wholesale Progress for Merchants/Admins */}
+                        {canSeeWholesalePrice && item.wholesale_price && item.min_order_quantity && item.quantity < item.min_order_quantity && (
+                          <div className="mt-3 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+                            <div className="flex items-start gap-2">
+                              <Tag className="w-4 h-4 text-yellow-500 flex-shrink-0 mt-0.5" />
+                              <p className="text-xs text-yellow-700 dark:text-yellow-300">
+                                {locale === 'ar' 
+                                  ? `أضف ${item.min_order_quantity - item.quantity} قطع إضافية للحصول على سعر الجملة`
+                                  : `Add ${item.min_order_quantity - item.quantity} more units to get wholesale price`
+                                }
+                              </p>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
-                  
-                  {/* Price Breakdown */}
-                  <div className="space-y-4 mb-6">
-                    <div className="flex justify-between">
-                      <span className="text-gray-400">{cartT.subtotal || 'Subtotal'}</span>
-                      <span className="font-semibold text-white">{formatPrice(subtotal, locale)}</span>
-                    </div>
-                    
-                    <div className="flex justify-between">
-                      <span className="text-gray-400">{cartT.shipping || 'Shipping'}</span>
-                      <span className="font-semibold text-white">
-                        {isCalculatingShipping ? (
-                          <span className="text-gray-500">
-                            {locale === 'ar' ? 'جاري الحساب...' : 'Calculating...'}
-                          </span>
-                        ) : shippingCost !== null ? (
-                          shippingCost === 0 ? (
-                            <span className="text-green-400">
-                              {locale === 'ar' ? 'مجاني' : 'Free'}
-                            </span>
-                          ) : (
-                            formatPrice(shippingCost, locale)
-                          )
-                        ) : (
-                          <span className="text-gray-500 text-sm">
-                            {locale === 'ar' ? 'اختر الموقع أولاً' : 'Select location first'}
-                          </span>
-                        )}
-                      </span>
-                    </div>
-                    
-                    <div className="border-t border-dark-600 pt-4 flex justify-between">
-                      <span className="font-semibold text-white">{cartT.total || 'Total'}</span>
-                      <span className="font-bold text-xl text-brand-red">
-                        {shippingCost !== null ? (
-                          formatPrice(grandTotal, locale)
-                        ) : (
-                          <span className="text-gray-500 text-sm">
-                            {locale === 'ar' ? '—' : '—'}
-                          </span>
-                        )}
-                      </span>
-                    </div>
+                );
+              })}
+            </div>
+
+            {/* Order Summary */}
+            <div className="lg:col-span-1">
+              <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700 sticky top-24">
+                <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6">
+                  {locale === 'ar' ? 'ملخص الطلب' : 'Order Summary'}
+                </h2>
+
+                <div className="space-y-4">
+                  {/* Subtotal */}
+                  <div className="flex justify-between">
+                    <span className="text-gray-600 dark:text-gray-400">
+                      {locale === 'ar' ? 'المجموع الفرعي' : 'Subtotal'}
+                    </span>
+                    <span className="font-medium text-gray-900 dark:text-white">
+                      {formatPrice(subtotal, locale)}
+                    </span>
                   </div>
-                  
-                  {/* Large Order Warning */}
-                  {isLargeOrder && (
-                    <div className="mb-4 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
-                      <div className="flex items-start gap-2">
-                        <AlertCircle className="w-5 h-5 text-yellow-400 flex-shrink-0 mt-0.5" />
-                        <div>
-                          <p className="text-sm font-medium text-yellow-400">
-                            {locale === 'ar' ? 'طلب كبير' : 'Large Order'}
-                          </p>
-                          <p className="text-xs text-yellow-300 mt-1">
-                            {locale === 'ar' 
-                              ? 'سنتواصل معك بعد تأكيد العنوان. لن يتم إتمام الدفع تلقائياً.'
-                              : 'We will contact you after confirming your address. Direct payment will not be completed automatically.'
-                            }
-                          </p>
-                        </div>
-                      </div>
+
+                  {/* Savings (for merchants/admins) */}
+                  {canSeeWholesalePrice && savings > 0 && (
+                    <div className="flex justify-between text-green-600 dark:text-green-400">
+                      <span className="flex items-center gap-1">
+                        <Tag className="w-4 h-4" />
+                        {locale === 'ar' ? 'التوفير' : 'Savings'}
+                      </span>
+                      <span className="font-medium">
+                        -{formatPrice(savings, locale)}
+                      </span>
                     </div>
                   )}
-                  
-                  {/* Shipping Not Calculated Warning */}
-                  {shippingCost === null && (
-                    <div className="mb-4 p-3 bg-blue-500/10 border border-blue-500/30 rounded-lg">
-                      <div className="flex items-start gap-2">
-                        <AlertCircle className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" />
-                        <div>
-                          <p className="text-sm font-medium text-blue-400">
-                            {locale === 'ar' ? 'التكلفة غير محسوبة' : 'Cost Not Calculated'}
-                          </p>
-                          <p className="text-xs text-blue-300 mt-1">
-                            {locale === 'ar' 
-                              ? 'الرجاء اختيار المدينة وطريقة التوصيل لعرض السعر النهائي.'
-                              : 'Please select city and delivery method to view the final price.'
-                            }
-                          </p>
+
+                  {/* Shipping */}
+                  <div className="flex justify-between">
+                    <span className="text-gray-600 dark:text-gray-400">
+                      {locale === 'ar' ? 'الشحن' : 'Shipping'}
+                    </span>
+                    <span className="font-medium text-gray-900 dark:text-white">
+                      {locale === 'ar' ? 'يحسب عند الدفع' : 'Calculated at checkout'}
+                    </span>
+                  </div>
+
+                  {/* Total */}
+                  <div className="flex justify-between pt-4 border-t border-gray-200 dark:border-gray-700">
+                    <span className="text-lg font-bold text-gray-900 dark:text-white">
+                      {locale === 'ar' ? 'الإجمالي' : 'Total'}
+                    </span>
+                    <span className="text-lg font-bold text-gray-900 dark:text-white">
+                      {formatPrice(subtotal, locale)}
+                    </span>
+                  </div>
+
+                  {/* Wholesale Info Box for Customers */}
+                  {isCustomer && (
+                    <Tooltip
+                      content={locale === 'ar' 
+                        ? 'بتسجيل الدخول كتاجر، يمكنك الوصول إلى أسعار الجملة والخصومات الحصرية على الكميات.'
+                        : 'By signing in as a merchant, you can access wholesale prices and exclusive quantity discounts.'
+                      }
+                    >
+                      <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg cursor-help">
+                        <div className="flex items-start gap-3">
+                          <Info className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />
+                          <div>
+                            <p className="text-sm font-medium text-blue-800 dark:text-blue-300">
+                              {locale === 'ar' ? 'هل أنت تاجر؟' : 'Are you a merchant?'}
+                            </p>
+                            <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
+                              {locale === 'ar' 
+                                ? 'سجل كتاجر للحصول على أسعار الجملة والخصومات الحصرية.'
+                                : 'Register as a merchant to get wholesale prices and exclusive discounts.'
+                              }
+                            </p>
+                          </div>
                         </div>
                       </div>
-                    </div>
+                    </Tooltip>
                   )}
-                  
-                  <Button 
-                    fullWidth 
+
+                  {/* Checkout Button */}
+                  <Button
                     onClick={handleCheckout}
-                    className="mt-2"
-                    disabled={!selectedCity || !deliveryMethod || isCalculatingShipping}
+                    className="w-full mt-6"
+                    size="lg"
                   >
-                    {isLargeOrder ? (
-                      <>
-                        {locale === 'ar' ? 'تقديم الطلب للمراجعة' : 'Submit for Review'}
-                        <ArrowRight className="w-5 h-5" />
-                      </>
-                    ) : (
-                      <>
-                        {cartT.checkout || 'Proceed to Checkout'}
-                        <ArrowRight className="w-5 h-5" />
-                      </>
-                    )}
+                    {locale === 'ar' ? 'متابعة الدفع' : 'Proceed to Checkout'}
+                    <ArrowRight className="w-5 h-5 ml-2" />
                   </Button>
                 </div>
               </div>
             </div>
-          )}
+          </div>
         </div>
       </div>
 

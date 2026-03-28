@@ -2,9 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { Lock, CheckCircle, XCircle, Loader2, Eye, EyeOff, ArrowLeft } from 'lucide-react';
-import { authAPI } from '../../../../lib/api';
-import { getDictionary } from '../../../../i18n';
+import { Lock, CheckCircle, XCircle, Loader2, Eye, EyeOff, ArrowLeft } from '@/components/icons';
+import { authAPI } from '@/lib';
+import { getDictionary } from '@/i18n';
 import { toast } from 'sonner';
 
 export default function ResetPassword({ params: { locale = 'en' } }) {

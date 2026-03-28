@@ -6,13 +6,13 @@ import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
-import { useAuthStore } from '../../../store/authStore';
-import { getDictionary } from '../../../i18n';
-import { cn } from '../../../lib/utils';
-import Navbar from '../../../components/Navbar';
-import Button from '../../../components/ui/Button';
-import { Input } from '../../../components/ui/Input';
+import { Mail, Lock, Eye, EyeOff } from '@/components/icons';
+import { useAuthStore } from '@/store';
+import { getDictionary } from '@/i18n';
+import { cn } from '@/lib';
+import { Navbar } from '@/components';
+import { Button } from '@/components';
+import { Input } from '@/components';
 
 const loginSchema = z.object({
   email: z.string().email('Invalid email address'),

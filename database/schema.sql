@@ -231,6 +231,15 @@ CREATE TABLE product_analytics (
     UNIQUE(product_id)
 );
 
+-- 10. Favorites - User favorite products
+CREATE TABLE favorites (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    product_id UUID REFERENCES products(id) ON DELETE CASCADE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(user_id, product_id)
+);
+
 -- ============================================
 -- INDEXES
 -- ============================================
@@ -260,6 +269,8 @@ CREATE INDEX idx_support_tickets_status ON support_tickets(status);
 CREATE INDEX idx_ticket_messages_ticket ON ticket_messages(ticket_id);
 CREATE INDEX idx_shipping_addresses_user ON shipping_addresses(user_id);
 CREATE INDEX idx_product_analytics_product ON product_analytics(product_id);
+CREATE INDEX idx_favorites_user ON favorites(user_id);
+CREATE INDEX idx_favorites_product ON favorites(product_id);
 
 -- ============================================
 -- DEFAULT DATA

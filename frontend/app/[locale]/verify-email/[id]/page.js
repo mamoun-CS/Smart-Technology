@@ -2,9 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { CheckCircle, XCircle, Loader2, Mail } from 'lucide-react';
-import { authAPI } from '../../../../lib/api';
-import { getDictionary } from '../../../../i18n';
+import { CheckCircle, XCircle, Loader2, Mail } from '@/components/icons';
+import { authAPI } from '@/lib';
+import { getDictionary } from '@/i18n';
 
 export default function VerifyEmail({ params: { locale = 'en' } }) {
   const [status, setStatus] = useState('loading');

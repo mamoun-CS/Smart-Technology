@@ -1,5 +1,5 @@
 import '../globals.css';
-import { getDictionary } from '../../i18n';
+import { getDictionary } from '@/i18n';
 import { Toaster } from 'sonner';
 
 export const metadata = {
