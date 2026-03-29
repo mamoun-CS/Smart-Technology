@@ -22,6 +22,11 @@ const orderModel = {
       return 0;
     }
 
+    // If no city provided, return 0
+    if (!city) {
+      return 0;
+    }
+
     // Get shipping cost for the city
     const query = `
       SELECT price FROM shipping_areas 
@@ -106,11 +111,12 @@ const orderModel = {
           status, 
           shipping_address, 
           payment_method,
+          city,
           delivery_method,
           shipping_cost,
           is_large_order
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
         RETURNING *
       `;
       const orderResult = await client.query(orderQuery, [
@@ -119,7 +125,8 @@ const orderModel = {
         orderStatus, 
         shipping_address, 
         payment_method,
-        delivery_method,
+        city || null,
+        delivery_method || null,
         shippingCost,
         isLargeOrder
       ]);

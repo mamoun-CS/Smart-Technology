@@ -3,6 +3,7 @@ const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const cookieParser = require('cookie-parser');
+const path = require('path');
 const passport = require('./utils/passport');
 const authController = require('./controllers/authController');
 const sitemapController = require('./controllers/sitemapController');
@@ -20,6 +21,7 @@ const notificationRoutes = require('./routes/notifications');
 const shippingRoutes = require('./routes/shipping');
 const ticketRoutes = require('./routes/tickets');
 const favoriteRoutes = require('./routes/favorites');
+const uploadRoutes = require('./routes/upload');
 require('dotenv').config();
 
 const app = express();
@@ -72,6 +74,21 @@ app.use(cookieParser());
 // Passport initialization
 app.use(passport.initialize());
 
+// Root route
+app.get('/', (req, res) => {
+  res.json({ 
+    status: 'ok', 
+    message: 'Smart Technology API Server',
+    timestamp: new Date().toISOString(),
+    endpoints: {
+      health: '/api/health',
+      products: '/api/products',
+      orders: '/api/orders',
+      auth: '/api/auth'
+    }
+  });
+});
+
 // Health check
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
@@ -94,6 +111,7 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/shipping', shippingRoutes);
 app.use('/api/tickets', ticketRoutes);
 app.use('/api/favorites', favoriteRoutes);
+app.use('/api/upload', uploadRoutes);
 
 // Google OAuth routes
 app.get('/api/auth/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
@@ -102,6 +120,9 @@ app.get('/api/auth/google/callback',
   passport.authenticate('google', { failureRedirect: '/login?error=auth_failed' }),
   authController.googleCallback
 );
+
+// Serve static files from image directory
+app.use('/image', express.static(path.join(__dirname, 'image')));
 
 // 404 handler
 app.use((req, res) => {

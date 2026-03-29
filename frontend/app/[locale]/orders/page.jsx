@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store';
 import { ordersAPI } from '@/lib';
 import { getDictionary } from '@/i18n';
-import { formatPrice, formatDate, getStatusColor, cn } from '@/lib';
+import { formatPrice, formatDate, getStatusColor, cn, getProductImage } from '@/lib';
 import { Navbar } from '@/components';
 import { MapPin, Truck, Store, AlertCircle } from '@/components/icons';
 
@@ -167,9 +167,9 @@ export default function OrdersPage({ params: { locale = 'en' } }) {
                       {order.items?.map((item) => (
                         <div key={item.id} className="flex items-center gap-4">
                           <div className="w-16 h-16 rounded-lg bg-gray-100 dark:bg-gray-700 overflow-hidden flex-shrink-0">
-                            {item.images && item.images.length > 0 ? (
+                            {item.images && item.images.length > 0 && getProductImage(item.images) ? (
                               <Image 
-                                src={item.images[0]} 
+                                src={getProductImage(item.images)} 
                                 alt={locale === 'ar' ? item.name_ar : item.name_en}
                                 width={64}
                                 height={64}

@@ -8,9 +8,9 @@ import {
   Search, Filter, MoreVertical, Eye, ChevronDown
 } from '@/components/icons';
 import { useAuthStore } from '@/store';
-import { productsAPI } from '@/lib';
+import { productsAPI, uploadAPI } from '@/lib';
 import { getDictionary } from '@/i18n';
-import { formatPrice, formatDate, cn } from '@/lib';
+import { formatPrice, formatDate, cn, getProductImage } from '@/lib';
 import { toast } from 'sonner';
 
 export default function ProductsManagement({ params: { locale = 'en' } }) {
@@ -76,25 +76,70 @@ export default function ProductsManagement({ params: { locale = 'en' } }) {
 
     setIsUploading(true);
     try {
+      // Create preview URLs for immediate display
       const newPreviews = files.map(file => URL.createObjectURL(file));
       setImagePreviews(prev => [...prev, ...newPreviews]);
 
-      const newImageUrls = files.map(file => URL.createObjectURL(file));
-      
-      setFormData(prev => ({
-        ...prev,
-        images: [...prev.images, ...newImageUrls]
-      }));
+      // Upload images to server using native fetch
+      const formDataUpload = new FormData();
+      files.forEach(file => {
+        formDataUpload.append('images', file);
+      });
 
-      toast.success(locale === 'ar' ? 'تم إضافة الصور' : 'Images added');
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}/upload/multiple`, {
+        method: 'POST',
+        credentials: 'include',
+        body: formDataUpload
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        // Replace blob URLs with server URLs
+        setFormData(prev => ({
+          ...prev,
+          images: [...prev.images, ...data.imageUrls]
+        }));
+        
+        // Update previews: replace blob URLs with server URLs
+        setImagePreviews(prev => {
+          // Find blob URLs (they start with 'blob:')
+          const blobUrls = prev.filter(url => url.startsWith('blob:'));
+          const serverUrls = prev.filter(url => !url.startsWith('blob:'));
+          // Replace blob URLs with server URLs
+          return [...serverUrls, ...data.imageUrls];
+        });
+
+        toast.success(locale === 'ar' ? 'تم إضافة الصور' : 'Images added');
+      } else {
+        throw new Error(data.message || 'Upload failed');
+      }
     } catch (error) {
+      console.error('Upload error:', error);
       toast.error(locale === 'ar' ? 'فشل رفع الصور' : 'Failed to upload images');
+      // Remove previews on error
+      setImagePreviews(prev => prev.slice(0, prev.length - files.length));
     } finally {
       setIsUploading(false);
     }
   };
 
-  const removeImage = (index) => {
+  const removeImage = async (index) => {
+    const imageUrl = formData.images[index];
+    
+    // If it's a server URL (not a blob), delete from server
+    if (imageUrl && !imageUrl.startsWith('blob:')) {
+      try {
+        const filename = imageUrl.split('/').pop();
+        await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}/upload/${filename}`, {
+          method: 'DELETE',
+          credentials: 'include'
+        });
+      } catch (error) {
+        console.error('Error deleting image from server:', error);
+      }
+    }
+    
     setImagePreviews(prev => prev.filter((_, i) => i !== index));
     setFormData(prev => ({
       ...prev,
@@ -351,7 +396,7 @@ export default function ProductsManagement({ params: { locale = 'en' } }) {
                       <div className="flex items-center gap-4">
                         <div className="w-14 h-14 bg-gray-100 dark:bg-gray-700 rounded-xl flex items-center justify-center overflow-hidden flex-shrink-0">
                           {product.images?.[0] ? (
-                            <img src={product.images[0]} alt="" className="w-full h-full object-cover" />
+                            <img src={getProductImage(product.images, 0)} alt="" className="w-full h-full object-cover" />
                           ) : (
                             <Package className="w-6 h-6 text-gray-400" />
                           )}
@@ -463,7 +508,7 @@ export default function ProductsManagement({ params: { locale = 'en' } }) {
                       <div className="grid grid-cols-4 gap-3 mb-4">
                         {imagePreviews.map((preview, index) => (
                           <div key={index} className="relative aspect-square rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700">
-                            <img src={preview} alt={`Preview ${index + 1}`} className="w-full h-full object-cover" />
+                            <img src={preview.startsWith('blob:') ? preview : getProductImage([preview])} alt={`Preview ${index + 1}`} className="w-full h-full object-cover" />
                             <button
                               type="button"
                               onClick={() => removeImage(index)}

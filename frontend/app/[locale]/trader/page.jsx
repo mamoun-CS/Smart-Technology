@@ -9,7 +9,7 @@ import { useForm } from 'react-hook-form';
 import { useAuthStore } from '@/store';
 import { productsAPI, ordersAPI } from '@/lib';
 import { getDictionary } from '@/i18n';
-import { formatPrice, cn } from '@/lib';
+import { formatPrice, cn, getProductImage } from '@/lib';
 import { toast } from 'sonner';
 import { Navbar } from '@/components';
 
@@ -219,9 +219,9 @@ export default function TraderDashboard({ params: { locale = 'en' } }) {
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-3">
                             <div className="w-12 h-12 rounded-lg bg-gray-100 dark:bg-gray-700 overflow-hidden">
-                              {product.images?.[0] ? (
+                              {product.images?.[0] && getProductImage(product.images, 0) ? (
                                 <Image 
-                                  src={product.images[0]} 
+                                  src={getProductImage(product.images, 0)} 
                                   alt={product.name_en}
                                   width={48}
                                   height={48}

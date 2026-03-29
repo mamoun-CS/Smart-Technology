@@ -10,8 +10,8 @@ router.get('/categories', productController.getCategories);
 router.get('/', productController.getProducts);
 router.get('/:id', productController.getProduct);
 
-// Protected routes - require trader role
-router.post('/', authMiddleware, requireTrader, requireApprovedTrader, [
+// Protected routes - require admin or trader role
+router.post('/', authMiddleware, requireAdminOrTrader, requireApprovedTrader, [
   body('name_en').trim().notEmpty().withMessage('English name is required'),
   body('name_ar').trim().notEmpty().withMessage('Arabic name is required'),
   body('unit_price').isFloat({ min: 0 }).withMessage('Unit price must be a positive number'),

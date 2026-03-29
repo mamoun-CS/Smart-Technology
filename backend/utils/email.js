@@ -33,6 +33,18 @@ const safeSendMail = async (mailOptions) => {
 };
 
 const emailUtils = {
+  // Generic send email function
+  async sendEmail({ to, subject, html }) {
+    const mailOptions = {
+      from: process.env.EMAIL_USER || 'noreply@smarttech.com',
+      to,
+      subject,
+      html
+    };
+
+    return safeSendMail(mailOptions);
+  },
+
   // Send verification email
   async sendVerificationEmail(email, name, token) {
     const verificationUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/verify-email/${token}`;

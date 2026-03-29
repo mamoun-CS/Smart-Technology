@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { Heart, ShoppingCart, Eye, Star } from '@/components/icons';
-import { formatPrice, cn } from '@/lib';
+import { formatPrice, cn, getProductImage } from '@/lib';
 import { useCartStore } from '@/store';
 import { useState } from 'react';
 import { toast } from 'sonner';
@@ -57,9 +57,9 @@ export default function ProductCard({
       )}>
         {/* Image Container */}
         <div className="relative aspect-square bg-gray-100 dark:bg-dark-700 overflow-hidden">
-          {product.images?.[0] && !imageError ? (
+          {product.images?.[0] && !imageError && getProductImage(product.images, 0) ? (
             <Image
-              src={product.images[0]}
+              src={getProductImage(product.images, 0)}
               alt={productName}
               fill
               className={cn(

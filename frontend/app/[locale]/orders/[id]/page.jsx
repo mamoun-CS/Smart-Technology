@@ -7,7 +7,7 @@ import Link from 'next/link';
 import { useAuthStore } from '@/store';
 import { ordersAPI } from '@/lib';
 import { getDictionary } from '@/i18n';
-import { formatPrice, formatDate, getStatusColor, cn } from '@/lib';
+import { formatPrice, formatDate, getStatusColor, cn, getProductImage } from '@/lib';
 import { Navbar } from '@/components';
 import { 
   Package, 
@@ -254,9 +254,9 @@ export default function OrderDetailsPage() {
                   <div className="flex gap-4">
                     {/* Product Image */}
                     <div className="flex-shrink-0 w-20 h-20 bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden">
-                      {item.images && item.images[0] ? (
+                      {item.images && item.images[0] && getProductImage(item.images) ? (
                         <Image
-                          src={item.images[0]}
+                          src={getProductImage(item.images)}
                           alt={locale === 'ar' ? item.name_ar : item.name_en}
                           width={80}
                           height={80}

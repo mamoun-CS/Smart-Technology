@@ -12,8 +12,8 @@ router.use(authMiddleware);
 router.post('/', [
   body('shipping_address').trim().notEmpty().withMessage('Shipping address is required'),
   body('payment_method').trim().notEmpty().withMessage('Payment method is required'),
-  body('city').trim().notEmpty().withMessage('City is required'),
-  body('delivery_method').isIn(['shipping', 'pickup']).withMessage('Delivery method must be "shipping" or "pickup"')
+  body('city').optional().trim().notEmpty().withMessage('City is required'),
+  body('delivery_method').optional().isIn(['shipping', 'pickup']).withMessage('Delivery method must be "shipping" or "pickup"')
 ], orderController.createOrder);
 
 router.get('/', orderController.getUserOrders);
@@ -21,8 +21,8 @@ router.get('/:id', orderController.getOrder);
 
 // Calculate shipping cost (for frontend preview)
 router.get('/calculate/shipping', [
-  query('city').trim().notEmpty().withMessage('City is required'),
-  query('delivery_method').isIn(['shipping', 'pickup']).withMessage('Delivery method must be "shipping" or "pickup"')
+  query('city').optional().trim().notEmpty().withMessage('City is required'),
+  query('delivery_method').optional().isIn(['shipping', 'pickup']).withMessage('Delivery method must be "shipping" or "pickup"')
 ], orderController.calculateShipping);
 
 // Check if order is large (for frontend preview)

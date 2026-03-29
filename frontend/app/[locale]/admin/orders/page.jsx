@@ -10,7 +10,7 @@ import {
 import { useAuthStore } from '@/store';
 import { ordersAPI } from '@/lib';
 import { getDictionary } from '@/i18n';
-import { formatPrice, formatDate, getStatusColor, cn } from '@/lib';
+import { formatPrice, formatDate, getStatusColor, cn, getProductImage } from '@/lib';
 import { toast } from 'sonner';
 
 const STATUSES = {
@@ -403,9 +403,9 @@ export default function OrdersManagement({ params: { locale = 'en' } }) {
                     {selectedOrder.items?.map((item, idx) => (
                       <div key={idx} className="flex items-center justify-between p-4">
                         <div className="flex items-center gap-3">
-                          {item.images && item.images.length > 0 ? (
+                          {item.images && item.images.length > 0 && getProductImage(item.images) ? (
                             <img 
-                              src={item.images[0]} 
+                              src={getProductImage(item.images)} 
                               alt={locale === 'ar' ? item.name_ar : item.name_en}
                               className="w-12 h-12 rounded-lg object-cover"
                             />

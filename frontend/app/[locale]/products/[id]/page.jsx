@@ -5,14 +5,14 @@ import { useParams, useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store';
 import { productsAPI, cartAPI } from '@/lib';
 import { getDictionary } from '@/i18n';
-import { formatPrice, cn } from '@/lib';
+import { formatPrice, cn, getProductImage } from '@/lib';
 import { toast } from 'sonner';
 import { Navbar } from '@/components';
 import { Footer } from '@/components';
 import { Button } from '@/components';
 import { Loading } from '@/components';
 import { Tooltip } from '@/components';
-import { ShoppingCart, Heart, Share2, ChevronLeft, ChevronRight, Info, Edit, X, Upload } from '@/components/icons';
+import { ShoppingCart, Heart, Share2, ChevronLeft, ChevronRight, Info, Edit, X, Upload, Package } from '@/components/icons';
 
 export default function ProductDetailPage({ params: { locale = 'en' } }) {
   const { id } = useParams();
@@ -166,25 +166,70 @@ export default function ProductDetailPage({ params: { locale = 'en' } }) {
 
     setIsUploading(true);
     try {
+      // Create preview URLs for immediate display
       const newPreviews = files.map(file => URL.createObjectURL(file));
       setImagePreviews(prev => [...prev, ...newPreviews]);
 
-      const newImageUrls = files.map(file => URL.createObjectURL(file));
-      
-      setFormData(prev => ({
-        ...prev,
-        images: [...prev.images, ...newImageUrls]
-      }));
+      // Upload images to server using native fetch
+      const formDataUpload = new FormData();
+      files.forEach(file => {
+        formDataUpload.append('images', file);
+      });
 
-      toast.success(locale === 'ar' ? 'تم إضافة الصور' : 'Images added');
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}/upload/multiple`, {
+        method: 'POST',
+        credentials: 'include',
+        body: formDataUpload
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        // Replace blob URLs with server URLs
+        setFormData(prev => ({
+          ...prev,
+          images: [...prev.images, ...data.imageUrls]
+        }));
+        
+        // Update previews: replace blob URLs with server URLs
+        setImagePreviews(prev => {
+          // Find blob URLs (they start with 'blob:')
+          const blobUrls = prev.filter(url => url.startsWith('blob:'));
+          const serverUrls = prev.filter(url => !url.startsWith('blob:'));
+          // Replace blob URLs with server URLs
+          return [...serverUrls, ...data.imageUrls];
+        });
+
+        toast.success(locale === 'ar' ? 'تم إضافة الصور' : 'Images added');
+      } else {
+        throw new Error(data.message || 'Upload failed');
+      }
     } catch (error) {
+      console.error('Upload error:', error);
       toast.error(locale === 'ar' ? 'فشل رفع الصور' : 'Failed to upload images');
+      // Remove previews on error
+      setImagePreviews(prev => prev.slice(0, prev.length - files.length));
     } finally {
       setIsUploading(false);
     }
   };
 
-  const removeImage = (index) => {
+  const removeImage = async (index) => {
+    const imageUrl = formData.images[index];
+    
+    // If it's a server URL (not a blob), delete from server
+    if (imageUrl && !imageUrl.startsWith('blob:')) {
+      try {
+        const filename = imageUrl.split('/').pop();
+        await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}/upload/${filename}`, {
+          method: 'DELETE',
+          credentials: 'include'
+        });
+      } catch (error) {
+        console.error('Error deleting image from server:', error);
+      }
+    }
+    
     setImagePreviews(prev => prev.filter((_, i) => i !== index));
     setFormData(prev => ({
       ...prev,
@@ -292,7 +337,7 @@ export default function ProductDetailPage({ params: { locale = 'en' } }) {
               <div className="aspect-square bg-white dark:bg-gray-800 rounded-2xl overflow-hidden">
                 {product.images && product.images.length > 0 && !imageErrors[selectedImage] ? (
                   <img
-                    src={product.images[selectedImage]}
+                    src={getProductImage(product.images, selectedImage)}
                     alt={locale === 'ar' ? product.name_ar : product.name_en}
                     className="w-full h-full object-cover"
                     onError={() => handleImageError(selectedImage)}
@@ -320,7 +365,7 @@ export default function ProductDetailPage({ params: { locale = 'en' } }) {
                     >
                       {!imageErrors[index] ? (
                         <img
-                          src={image}
+                          src={getProductImage(product.images, index)}
                           alt={`${locale === 'ar' ? product.name_ar : product.name_en} - ${index + 1}`}
                           className="w-full h-full object-cover"
                           onError={() => handleImageError(index)}

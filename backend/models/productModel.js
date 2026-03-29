@@ -10,15 +10,18 @@ const productModel = {
       barcode, qr_code, warehouse_location
     } = productData;
     
+    // Convert empty strings to null for UUID fields
+    const categoryIdValue = category_id === '' ? null : category_id;
+    
     const query = `
       INSERT INTO products (name_en, name_ar, description_en, description_ar, 
-        unit_price, wholesale_price, min_order_quantity, stock, category_id, 
+        price, unit_price, wholesale_price, min_order_quantity, stock, category_id, 
         created_by, images, barcode, qr_code, warehouse_location)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
       RETURNING *
     `;
     const values = [name_en, name_ar, description_en, description_ar, 
-      unit_price, wholesale_price, min_order_quantity || 1, stock, category_id, 
+      unit_price, unit_price, wholesale_price, min_order_quantity || 1, stock, categoryIdValue, 
       created_by, images, barcode, qr_code, warehouse_location];
     
     const result = await pool.query(query, values);
@@ -196,6 +199,9 @@ const productModel = {
       stock, category_id, images, barcode, qr_code, warehouse_location
     } = productData;
 
+    // Convert empty strings to null for UUID fields
+    const categoryIdValue = category_id === '' ? null : category_id;
+
     const query = `
       UPDATE products SET
         name_en = COALESCE($1, name_en),
@@ -218,7 +224,7 @@ const productModel = {
     const values = [
       name_en, name_ar, description_en, description_ar,
       unit_price, wholesale_price, min_order_quantity,
-      stock, category_id, images, barcode, qr_code, warehouse_location, id
+      stock, categoryIdValue, images, barcode, qr_code, warehouse_location, id
     ];
     const result = await pool.query(query, values);
     return result.rows[0];

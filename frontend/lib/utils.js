@@ -84,7 +84,15 @@ export function getProductImage(images, index = 0) {
   if (!images || !Array.isArray(images) || images.length === 0) {
     return null;
   }
-  return images[index] || null;
+  const imageUrl = images[index] || null;
+  
+  // If the image URL is a relative path (starts with /), prepend the backend URL
+  if (imageUrl && imageUrl.startsWith('/')) {
+    const backendUrl = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:5000';
+    return `${backendUrl}${imageUrl}`;
+  }
+  
+  return imageUrl;
 }
 
 export function hasValidImage(images) {

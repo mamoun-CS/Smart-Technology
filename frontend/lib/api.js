@@ -217,6 +217,17 @@ export const favoritesAPI = {
   getMostFavorited: (limit = 10) => api.get('/favorites/admin/most-favorited', { params: { limit } }),
 };
 
+// Upload API
+export const uploadAPI = {
+  uploadSingle: (formData) => api.post('/upload/single', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  }),
+  uploadMultiple: (formData) => api.post('/upload/multiple', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  }),
+  deleteImage: (filename) => api.delete(`/upload/${filename}`),
+};
+
 // Admin API
 export const adminAPI = {
   getUsers: (params) => api.get('/admin/users', { params }),

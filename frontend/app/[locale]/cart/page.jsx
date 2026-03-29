@@ -5,14 +5,14 @@ import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store';
 import { cartAPI } from '@/lib';
 import { getDictionary } from '@/i18n';
-import { formatPrice, cn } from '@/lib';
+import { formatPrice, cn, getProductImage } from '@/lib';
 import { toast } from 'sonner';
 import { Navbar } from '@/components';
 import { Footer } from '@/components';
 import { Button } from '@/components';
 import { Loading } from '@/components';
 import { Tooltip } from '@/components';
-import { Trash2, Plus, Minus, ShoppingCart, ArrowRight, Info, Tag } from '@/components/icons';
+import { Trash2, Plus, Minus, ShoppingCart, ArrowRight, Info, Tag, MapPin, Truck, Store } from '@/components/icons';
 
 export default function CartPage({ params: { locale = 'en' } }) {
   const router = useRouter();
@@ -25,10 +25,17 @@ export default function CartPage({ params: { locale = 'en' } }) {
   const [cart, setCart] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [updatingItemId, setUpdatingItemId] = useState(null);
+  
+  // Location and delivery method state
+  const [shippingAreas, setShippingAreas] = useState([]);
+  const [selectedCity, setSelectedCity] = useState('');
+  const [deliveryMethod, setDeliveryMethod] = useState('');
+  const [isLoadingAreas, setIsLoadingAreas] = useState(false);
 
   useEffect(() => {
     if (isAuthenticated) {
       fetchCart();
+      fetchShippingAreas();
     } else {
       setIsLoading(false);
     }
@@ -47,12 +54,27 @@ export default function CartPage({ params: { locale = 'en' } }) {
     }
   };
 
+  const fetchShippingAreas = async () => {
+    try {
+      setIsLoadingAreas(true);
+      const response = await fetch('/api/shipping/areas?active=true');
+      const data = await response.json();
+      if (data.success) {
+        setShippingAreas(data.areas || []);
+      }
+    } catch (error) {
+      console.error('Error fetching shipping areas:', error);
+    } finally {
+      setIsLoadingAreas(false);
+    }
+  };
+
   const handleUpdateQuantity = async (productId, newQuantity) => {
     if (newQuantity < 1) return;
     
     try {
       setUpdatingItemId(productId);
-      await cartAPI.updateItem(productId, newQuantity);
+      await cartAPI.updateItem(productId, { quantity: newQuantity });
       await fetchCart();
       toast.success(locale === 'ar' ? 'تم تحديث الكمية' : 'Quantity updated');
     } catch (error) {
@@ -82,7 +104,23 @@ export default function CartPage({ params: { locale = 'en' } }) {
       router.push(`/${locale}/login`);
       return;
     }
-    router.push(`/${locale}/checkout`);
+    
+    // Build checkout URL with optional city and delivery method
+    let checkoutUrl = `/${locale}/checkout`;
+    const params = new URLSearchParams();
+    
+    if (selectedCity) {
+      params.append('city', selectedCity);
+    }
+    if (deliveryMethod) {
+      params.append('delivery_method', deliveryMethod);
+    }
+    
+    if (params.toString()) {
+      checkoutUrl += `?${params.toString()}`;
+    }
+    
+    router.push(checkoutUrl);
   };
 
   // Check if user can see wholesale price
@@ -219,7 +257,7 @@ export default function CartPage({ params: { locale = 'en' } }) {
                       <div className="w-24 h-24 flex-shrink-0 bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden">
                         {item.images && item.images.length > 0 ? (
                           <img
-                            src={item.images[0]}
+                            src={getProductImage(item.images)}
                             alt={locale === 'ar' ? item.name_ar : item.name_en}
                             className="w-full h-full object-cover"
                           />
@@ -438,6 +476,94 @@ export default function CartPage({ params: { locale = 'en' } }) {
                       </div>
                     </Tooltip>
                   )}
+
+                  {/* Location & Delivery Method Selection */}
+                  <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
+                    <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+                      <MapPin className="w-4 h-4 text-brand-red" />
+                      {locale === 'ar' ? 'الموقع والتوصيل' : 'Location & Delivery'}
+                    </h3>
+                    
+                    {/* City Selection */}
+                    <div className="mb-3">
+                      <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">
+                        {locale === 'ar' ? 'المدينة' : 'City'}
+                      </label>
+                      {isLoadingAreas ? (
+                        <div className="h-10 bg-gray-100 dark:bg-gray-700 rounded-lg animate-pulse" />
+                      ) : shippingAreas.length > 0 ? (
+                        <select
+                          value={selectedCity}
+                          onChange={(e) => setSelectedCity(e.target.value)}
+                          className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-brand-red focus:border-transparent"
+                        >
+                          <option value="">
+                            {locale === 'ar' ? 'اختر المدينة' : 'Select City'}
+                          </option>
+                          {shippingAreas.map((area) => (
+                            <option key={area.id} value={area.name_en}>
+                              {locale === 'ar' ? area.name_ar : area.name_en}
+                            </option>
+                          ))}
+                        </select>
+                      ) : (
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          {locale === 'ar' ? 'لا توجد مدن متاحة' : 'No cities available'}
+                        </p>
+                      )}
+                    </div>
+                    
+                    {/* Delivery Method Selection */}
+                    <div className="space-y-2">
+                      <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">
+                        {locale === 'ar' ? 'طريقة التوصيل' : 'Delivery Method'}
+                      </label>
+                      <div
+                        onClick={() => {
+                          setDeliveryMethod('shipping');
+                          // Clear city if it was set to Abu Dis from pickup
+                          if (selectedCity === 'Abu Dis') {
+                            setSelectedCity('');
+                          }
+                        }}
+                        className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors ${
+                          deliveryMethod === 'shipping'
+                            ? 'bg-brand-red/10 border-2 border-brand-red'
+                            : 'bg-gray-50 dark:bg-gray-700 border-2 border-transparent hover:border-gray-300 dark:hover:border-gray-600'
+                        }`}
+                      >
+                        <Truck className={`w-5 h-5 ${deliveryMethod === 'shipping' ? 'text-brand-red' : 'text-gray-400'}`} />
+                        <span className={`text-sm font-medium ${deliveryMethod === 'shipping' ? 'text-brand-red' : 'text-gray-700 dark:text-gray-300'}`}>
+                          {locale === 'ar' ? 'شحن' : 'Shipping'}
+                        </span>
+                      </div>
+                      <div
+                        onClick={() => {
+                          setDeliveryMethod('pickup');
+                          // Auto-set city to Abu Dis for in-store pickup
+                          setSelectedCity('Abu Dis');
+                        }}
+                        className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors ${
+                          deliveryMethod === 'pickup'
+                            ? 'bg-brand-red/10 border-2 border-brand-red'
+                            : 'bg-gray-50 dark:bg-gray-700 border-2 border-transparent hover:border-gray-300 dark:hover:border-gray-600'
+                        }`}
+                      >
+                        <Store className={`w-5 h-5 ${deliveryMethod === 'pickup' ? 'text-brand-red' : 'text-gray-400'}`} />
+                        <span className={`text-sm font-medium ${deliveryMethod === 'pickup' ? 'text-brand-red' : 'text-gray-700 dark:text-gray-300'}`}>
+                          {locale === 'ar' ? 'استلام من المتجر' : 'In-Store Pickup'}
+                        </span>
+                      </div>
+                    </div>
+                    
+                    {/* Optional note */}
+                    <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                      {locale === 'ar' 
+                        ? 'يمكنك تخطي هذا وسيتم التواصل معك لتأكيد التفاصيل.'
+                        : 'You can skip this and we will contact you to confirm details.'
+                      }
+                    </p>
+                  </div>
 
                   {/* Checkout Button */}
                   <Button

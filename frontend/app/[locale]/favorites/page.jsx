@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store';
 import { favoritesAPI, cartAPI } from '@/lib';
 import { getDictionary } from '@/i18n';
-import { formatPrice, cn } from '@/lib';
+import { formatPrice, cn, getProductImage } from '@/lib';
 import { toast } from 'sonner';
 import { Navbar } from '@/components';
 import { Footer } from '@/components';
@@ -144,7 +144,7 @@ export default function FavoritesPage({ params: { locale = 'en' } }) {
                   <div className="relative aspect-square bg-gray-100 dark:bg-gray-700">
                     {product.images && product.images.length > 0 && !imageErrors[product.id] ? (
                       <img
-                        src={product.images[0]}
+                        src={getProductImage(product.images, 0)}
                         alt={locale === 'ar' ? product.name_ar : product.name_en}
                         className="w-full h-full object-cover"
                         onError={() => handleImageError(product.id)}

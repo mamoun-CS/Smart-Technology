@@ -1,3 +1,4 @@
+
 const orderModel = require('../models/orderModel');
 const emailUtils = require('../utils/email');
 const userModel = require('../models/userModel');
@@ -8,16 +9,8 @@ const orderController = {
     try {
       const { shipping_address, payment_method, city, delivery_method } = req.body;
 
-      // Validate required fields
-      if (!city || !delivery_method) {
-        return res.status(400).json({ 
-          success: false, 
-          message: 'City and delivery method are required.' 
-        });
-      }
-
-      // Validate delivery method
-      if (!['shipping', 'pickup'].includes(delivery_method)) {
+      // Validate delivery method if provided
+      if (delivery_method && !['shipping', 'pickup'].includes(delivery_method)) {
         return res.status(400).json({ 
           success: false, 
           message: 'Invalid delivery method. Must be "shipping" or "pickup".' 
@@ -27,8 +20,8 @@ const orderController = {
       const order = await orderModel.createOrder(req.user.id, {
         shipping_address,
         payment_method,
-        city,
-        delivery_method
+        city: city || null,
+        delivery_method: delivery_method || null
       });
 
       // Send confirmation email
@@ -45,10 +38,10 @@ const orderController = {
             <p><strong>We will contact you after confirming your address.</strong></p>
             <p>Order Details:</p>
             <ul>
-              <li>Total: $${order.total_price}</li>
-              <li>City: ${order.city}</li>
-              <li>Delivery Method: ${order.delivery_method}</li>
-              <li>Shipping Cost: $${order.shipping_cost}</li>
+              <li>Total: ${order.total_price}</li>
+              ${order.city ? `<li>City: ${order.city}</li>` : ''}
+              ${order.delivery_method ? `<li>Delivery Method: ${order.delivery_method}</li>` : ''}
+              <li>Shipping Cost: ${order.shipping_cost}</li>
             </ul>
             <p>Our team will review your order and contact you shortly.</p>
           `
@@ -267,20 +260,13 @@ const orderController = {
     try {
       const { city, delivery_method } = req.query;
 
-      if (!city || !delivery_method) {
-        return res.status(400).json({ 
-          success: false, 
-          message: 'City and delivery method are required.' 
-        });
-      }
-
       const shippingCost = await orderModel.calculateShippingCost(city, delivery_method);
 
       res.json({
         success: true,
         shipping_cost: shippingCost,
-        delivery_method,
-        city
+        delivery_method: delivery_method || null,
+        city: city || null
       });
     } catch (error) {
       console.error('Calculate shipping error:', error);

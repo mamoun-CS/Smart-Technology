@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store';
 import { favoritesAPI, productsAPI, adminAPI } from '@/lib';
 import { getDictionary } from '@/i18n';
-import { formatPrice, cn } from '@/lib';
+import { formatPrice, cn, getProductImage } from '@/lib';
 import { toast } from 'sonner';
 import { 
   Heart, Package, TrendingUp, Users, ShoppingCart, 
@@ -220,7 +220,7 @@ export default function AdminAnalyticsPage({ params: { locale = 'en' } }) {
                       <div className="flex items-center gap-3">
                         <div className="w-12 h-12 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center overflow-hidden">
                           {product.images && product.images.length > 0 ? (
-                            <img src={product.images[0]} alt="" className="w-full h-full object-cover" />
+                            <img src={getProductImage(product.images, 0)} alt="" className="w-full h-full object-cover" />
                           ) : (
                             <Package className="w-6 h-6 text-gray-400" />
                           )}

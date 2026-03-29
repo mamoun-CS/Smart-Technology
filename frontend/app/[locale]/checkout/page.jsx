@@ -7,7 +7,7 @@ import { ArrowLeft, CreditCard, MapPin, Truck, Store, AlertCircle, Check } from 
 import { useCartStore } from '@/store';
 import { useAuthStore } from '@/store';
 import { getDictionary } from '@/i18n';
-import { formatPrice, cn } from '@/lib';
+import { formatPrice, cn, getProductImage } from '@/lib';
 import { toast } from 'sonner';
 import { Navbar } from '@/components';
 import { Footer } from '@/components';
@@ -51,33 +51,16 @@ function CheckoutContent({ locale = 'en' }) {
       return;
     }
     
-    if (!city || !deliveryMethod) {
-      router.push(`/${locale}/cart`);
-      return;
-    }
-    
     fetchCart();
     setIsLoading(false);
-  }, [isAuthenticated, items.length, city, deliveryMethod, fetchCart, router, locale]);
+  }, [isAuthenticated, items.length, fetchCart, router, locale]);
 
   // Calculate shipping and check large order
   useEffect(() => {
     const calculateDetails = async () => {
-      if (!city || !deliveryMethod) return;
-      
+      // Check if large order even without shipping info
+      const totalQuantity = items.reduce((sum, item) => sum + item.quantity, 0);
       try {
-        // Calculate shipping
-        const shippingResponse = await fetch(
-          `/api/orders/calculate/shipping?city=${encodeURIComponent(city)}&delivery_method=${deliveryMethod}`
-        );
-        const shippingData = await shippingResponse.json();
-        
-        if (shippingData.success) {
-          setShippingCost(shippingData.shipping_cost);
-        }
-        
-        // Check if large order
-        const totalQuantity = items.reduce((sum, item) => sum + item.quantity, 0);
         const largeOrderResponse = await fetch(
           `/api/orders/check/large-order?total_quantity=${totalQuantity}`
         );
@@ -87,7 +70,23 @@ function CheckoutContent({ locale = 'en' }) {
           setIsLargeOrder(largeOrderData.is_large_order);
         }
       } catch (error) {
-        console.error('Error calculating details:', error);
+        console.error('Error checking large order:', error);
+      }
+      
+      // Calculate shipping only if city and delivery method are provided
+      if (!city || !deliveryMethod) return;
+      
+      try {
+        const shippingResponse = await fetch(
+          `/api/orders/calculate/shipping?city=${encodeURIComponent(city)}&delivery_method=${deliveryMethod}`
+        );
+        const shippingData = await shippingResponse.json();
+        
+        if (shippingData.success) {
+          setShippingCost(shippingData.shipping_cost);
+        }
+      } catch (error) {
+        console.error('Error calculating shipping:', error);
       }
     };
     
@@ -102,7 +101,8 @@ function CheckoutContent({ locale = 'en' }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    if (!formData.shipping_address.trim()) {
+    // Only require shipping address if delivery method is not pickup
+    if (deliveryMethod !== 'pickup' && !formData.shipping_address.trim()) {
       toast.error(locale === 'ar' ? 'الرجاء إدخال عنوان الشحن' : 'Please enter shipping address');
       return;
     }
@@ -110,17 +110,25 @@ function CheckoutContent({ locale = 'en' }) {
     setIsProcessing(true);
     
     try {
+      const orderData = {
+        payment_method: formData.payment_method,
+      };
+      
+      // Only include shipping_address if not pickup
+      if (deliveryMethod !== 'pickup') {
+        orderData.shipping_address = formData.shipping_address;
+      }
+      
+      // Only include city and delivery_method if they are provided
+      if (city) orderData.city = city;
+      if (deliveryMethod) orderData.delivery_method = deliveryMethod;
+      
       const response = await fetch('/api/orders', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          shipping_address: formData.shipping_address,
-          payment_method: formData.payment_method,
-          city,
-          delivery_method: deliveryMethod
-        }),
+        body: JSON.stringify(orderData),
       });
       
       const data = await response.json();
@@ -210,56 +218,69 @@ function CheckoutContent({ locale = 'en' }) {
                     {locale === 'ar' ? 'ملخص الموقع' : 'Location Summary'}
                   </h2>
                   
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="p-4 bg-dark-700 rounded-lg">
-                      <p className="text-xs text-gray-400 mb-1">
-                        {locale === 'ar' ? 'المدينة' : 'City'}
-                      </p>
-                      <p className="text-white font-medium">{city}</p>
-                    </div>
-                    <div className="p-4 bg-dark-700 rounded-lg">
-                      <p className="text-xs text-gray-400 mb-1">
-                        {locale === 'ar' ? 'طريقة التوصيل' : 'Delivery Method'}
-                      </p>
-                      <div className="flex items-center gap-2">
-                        {deliveryMethod === 'shipping' ? (
-                          <>
-                            <Truck className="w-4 h-4 text-brand-red" />
-                            <span className="text-white font-medium">
-                              {locale === 'ar' ? 'شحن' : 'Shipping'}
-                            </span>
-                          </>
-                        ) : (
-                          <>
-                            <Store className="w-4 h-4 text-brand-red" />
-                            <span className="text-white font-medium">
-                              {locale === 'ar' ? 'استلام من المتجر' : 'In-Store Pickup'}
-                            </span>
-                          </>
-                        )}
+                  {city && deliveryMethod ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="p-4 bg-dark-700 rounded-lg">
+                        <p className="text-xs text-gray-400 mb-1">
+                          {locale === 'ar' ? 'المدينة' : 'City'}
+                        </p>
+                        <p className="text-white font-medium">{city}</p>
+                      </div>
+                      <div className="p-4 bg-dark-700 rounded-lg">
+                        <p className="text-xs text-gray-400 mb-1">
+                          {locale === 'ar' ? 'طريقة التوصيل' : 'Delivery Method'}
+                        </p>
+                        <div className="flex items-center gap-2">
+                          {deliveryMethod === 'shipping' ? (
+                            <>
+                              <Truck className="w-4 h-4 text-brand-red" />
+                              <span className="text-white font-medium">
+                                {locale === 'ar' ? 'شحن' : 'Shipping'}
+                              </span>
+                            </>
+                          ) : (
+                            <>
+                              <Store className="w-4 h-4 text-brand-red" />
+                              <span className="text-white font-medium">
+                                {locale === 'ar' ? 'استلام من المتجر' : 'In-Store Pickup'}
+                              </span>
+                            </>
+                          )}
+                        </div>
                       </div>
                     </div>
-                  </div>
+                  ) : (
+                    <div className="p-4 bg-dark-700 rounded-lg">
+                      <p className="text-sm text-gray-400">
+                        {locale === 'ar' 
+                          ? 'لم يتم تحديد المدينة وطريقة التوصيل. يمكنك إكمال الطلب وسيتم التواصل معك لتأكيد التفاصيل.'
+                          : 'City and delivery method not selected. You can complete your order and we will contact you to confirm the details.'
+                        }
+                      </p>
+                    </div>
+                  )}
                 </div>
 
-                {/* Shipping Address */}
-                <div className="card p-6 bg-dark-800 border-dark-600">
-                  <h2 className="text-lg font-semibold text-white mb-4">
-                    {locale === 'ar' ? 'عنوان الشحن' : 'Shipping Address'}
-                  </h2>
-                  
-                  <Input
-                    label={locale === 'ar' ? 'العنوان الكامل' : 'Full Address'}
-                    name="shipping_address"
-                    value={formData.shipping_address}
-                    onChange={handleInputChange}
-                    placeholder={locale === 'ar' 
-                      ? 'أدخل عنوان الشحن الكامل...'
-                      : 'Enter your full shipping address...'
-                    }
-                    required
-                  />
-                </div>
+                {/* Shipping Address - Only show if not pickup */}
+                {deliveryMethod !== 'pickup' && (
+                  <div className="card p-6 bg-dark-800 border-dark-600">
+                    <h2 className="text-lg font-semibold text-white mb-4">
+                      {locale === 'ar' ? 'عنوان الشحن' : 'Shipping Address'}
+                    </h2>
+                    
+                    <Input
+                      label={locale === 'ar' ? 'العنوان الكامل' : 'Full Address'}
+                      name="shipping_address"
+                      value={formData.shipping_address}
+                      onChange={handleInputChange}
+                      placeholder={locale === 'ar' 
+                        ? 'أدخل عنوان الشحن الكامل...'
+                        : 'Enter your full shipping address...'
+                      }
+                      required
+                    />
+                  </div>
+                )}
 
                 {/* Payment Method */}
                 <div className="card p-6 bg-dark-800 border-dark-600">
@@ -377,9 +398,9 @@ function CheckoutContent({ locale = 'en' }) {
                   {items.map((item) => (
                     <div key={item.id} className="flex gap-3">
                       <div className="relative w-16 h-16 flex-shrink-0 bg-dark-700 rounded-lg overflow-hidden">
-                        {item.images?.[0] ? (
+                        {item.images?.[0] && getProductImage(item.images) ? (
                           <Image 
-                            src={item.images[0]} 
+                            src={getProductImage(item.images)} 
                             alt={locale === 'ar' ? item.name_ar : item.name_en}
                             fill
                             className="object-cover"
@@ -424,8 +445,12 @@ function CheckoutContent({ locale = 'en' }) {
                         ) : (
                           formatPrice(shippingCost, locale)
                         )
-                      ) : (
+                      ) : city && deliveryMethod ? (
                         <span className="text-gray-500">—</span>
+                      ) : (
+                        <span className="text-gray-500">
+                          {locale === 'ar' ? 'سيتم احتسابه' : 'TBD'}
+                        </span>
                       )}
                     </span>
                   </div>
