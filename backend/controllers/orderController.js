@@ -1,6 +1,6 @@
 
 const orderModel = require('../models/orderModel');
-const emailUtils = require('../utils/email');
+const emailService = require('../services/emailService');
 const userModel = require('../models/userModel');
 
 const orderController = {
@@ -29,7 +29,7 @@ const orderController = {
       
       // Customize email based on order status
       if (order.status === 'under_review') {
-        await emailUtils.sendEmail({
+        await emailService.sendEmail({
           to: user.email,
           subject: 'Order Under Review - Smart Technology',
           html: `
@@ -47,7 +47,7 @@ const orderController = {
           `
         });
       } else {
-        await emailUtils.sendOrderConfirmationEmail(user.email, user.name, order);
+        await emailService.sendOrderConfirmationEmail(user.email, user.name, order);
       }
 
       res.status(201).json({
@@ -168,7 +168,7 @@ const orderController = {
       if (status === 'confirmed' || status === 'contacted') {
         const user = await userModel.findById(order.user_id);
         if (user) {
-          await emailUtils.sendEmail({
+          await emailService.sendEmail({
             to: user.email,
             subject: `Order Status Updated - Smart Technology`,
             html: `

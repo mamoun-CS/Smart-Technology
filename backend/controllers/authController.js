@@ -1,7 +1,7 @@
 const userModel = require('../models/userModel');
 const tokenModel = require('../models/tokenModel');
 const jwtUtils = require('../utils/jwt');
-const emailUtils = require('../utils/email');
+const emailService = require('../services/emailService');
 const { validationResult } = require('express-validator');
 
 const authController = {
@@ -33,7 +33,7 @@ const authController = {
       // Send verification email (optional - won't fail registration if email fails)
       try {
         const tokenData = await tokenModel.createEmailToken(user.id, 'verification');
-        await emailUtils.sendVerificationEmail(user.email, user.name, tokenData.token);
+        await emailService.sendVerificationEmail(user.email, user.name, tokenData.token);
       } catch (emailError) {
         console.error('Email sending failed during registration:', emailError.message);
         console.error('Email error stack:', emailError.stack);
@@ -303,7 +303,7 @@ const authController = {
 
       const tokenData = await tokenModel.createEmailToken(user.id, 'password_reset');
       try {
-        await emailUtils.sendPasswordResetEmail(user.email, user.name, tokenData.token);
+        await emailService.sendPasswordResetEmail(user.email, user.name, tokenData.token);
       } catch (emailError) {
         console.error('Password reset email sending failed:', emailError.message);
         console.error('Password reset email error stack:', emailError.stack);
