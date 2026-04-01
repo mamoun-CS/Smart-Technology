@@ -3,6 +3,14 @@ const { Resend } = require('resend');
 // Initialize Resend with API key from environment variable
 const resend = new Resend(process.env.RESEND_API_KEY);
 
+// NOTE: For production use, you need to:
+// 1. Verify a domain at resend.com/domains
+// 2. Update the 'from' address below to use your verified domain
+// 3. Example: from: 'noreply@yourdomain.com'
+// 
+// For testing, you can only send to your own email address.
+// The default 'onboarding@resend.dev' only works for testing purposes.
+
 /**
  * Generic email sending function using Resend API
  * @param {Object} options - Email options
@@ -22,6 +30,21 @@ const sendEmail = async ({ to, subject, html }) => {
 
     if (error) {
       console.error('❌ Email sending FAILED:', error);
+      
+      // Provide helpful error message for common Resend API issues
+      if (error.statusCode === 403 && error.message.includes('testing emails')) {
+        throw new Error(
+          `Resend API Error: You can only send testing emails to your own email address. ` +
+          `To send emails to other recipients, please:
+` +
+          `1. Verify a domain at resend.com/domains
+` +
+          `2. Update the 'from' address in emailService.js to use your verified domain
+` +
+          `3. Or use a Resend API key with a verified domain`
+        );
+      }
+      
       throw new Error(`Failed to send email: ${error.message}`);
     }
 
