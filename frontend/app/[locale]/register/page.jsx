@@ -27,6 +27,7 @@ const registerSchema = z.object({
 
 export default function RegisterPage({ params: { locale = 'en' } }) {
   const [showPassword, setShowPassword] = useState(false);
+  const [selectedRole, setSelectedRole] = useState('customer');
   const router = useRouter();
   const dict = getDictionary(locale);
   const t = dict?.auth || {};
@@ -38,6 +39,7 @@ export default function RegisterPage({ params: { locale = 'en' } }) {
   const {
     register,
     handleSubmit,
+    setValue,
     formState: { errors },
   } = useForm({
     resolver: zodResolver(registerSchema),
@@ -145,49 +147,68 @@ export default function RegisterPage({ params: { locale = 'en' } }) {
               {/* Account Type Selection */}
               <div>
                 <label className="label text-gray-300">Account Type</label>
-                <div className="grid grid-cols-2 gap-3">
-                  <label className={cn(
-                    "flex flex-col items-center gap-2 p-4 rounded-xl border cursor-pointer transition-all",
-                    "border-dark-600 hover:border-brand-red/50 hover:bg-dark-700/50",
-                    "data-[selected=true]:border-brand-red data-[selected=true]:bg-brand-red/10"
-                  )}>
-                    <input
-                      type="radio"
-                      value="customer"
-                      {...register('role')}
-                      className="sr-only"
-                    />
-                    <div className={cn(
-                      "w-10 h-10 rounded-full flex items-center justify-center transition-colors",
-                      "bg-dark-700 group-data-[selected=true]:bg-brand-red/20"
-                    )}>
-                      <ShoppingCart className="w-5 h-5 text-gray-400 group-data-[selected=true]:text-brand-red" />
-                    </div>
-                    <span className="text-sm font-medium text-gray-300">Customer</span>
-                    <span className="text-xs text-gray-500">Shop & buy</span>
-                  </label>
+                <div className="relative grid grid-cols-2 gap-3 p-1 bg-dark-700 rounded-xl">
+                  {/* Toggle indicator */}
+                  <div className={cn(
+                    "absolute top-1 bottom-1 w-[calc(50%-4px)] bg-brand-red rounded-lg transition-all duration-300 ease-in-out",
+                    selectedRole === 'customer' ? 'left-1' : 'left-[calc(50%+2px)]'
+                  )} />
                   
-                  <label className={cn(
-                    "flex flex-col items-center gap-2 p-4 rounded-xl border cursor-pointer transition-all",
-                    "border-dark-600 hover:border-brand-red/50 hover:bg-dark-700/50",
-                    "data-[selected=true]:border-brand-red data-[selected=true]:bg-brand-red/10"
-                  )}>
-                    <input
-                      type="radio"
-                      value="trader"
-                      {...register('role')}
-                      className="sr-only"
-                    />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedRole('customer');
+                      setValue('role', 'customer');
+                    }}
+                    className={cn(
+                      "relative flex flex-col items-center gap-2 p-4 rounded-xl cursor-pointer transition-all z-10",
+                      selectedRole === 'customer' ? 'text-white' : 'text-gray-400 hover:text-gray-200'
+                    )}
+                  >
                     <div className={cn(
                       "w-10 h-10 rounded-full flex items-center justify-center transition-colors",
-                      "bg-dark-700 group-data-[selected=true]:bg-brand-red/20"
+                      selectedRole === 'customer' ? 'bg-white/20' : 'bg-dark-600'
                     )}>
-                      <Store className="w-5 h-5 text-gray-400 group-data-[selected=true]:text-brand-red" />
+                      <ShoppingCart className={cn(
+                        "w-5 h-5 transition-colors",
+                        selectedRole === 'customer' ? 'text-white' : 'text-gray-400'
+                      )} />
                     </div>
-                    <span className="text-sm font-medium text-gray-300">Trader</span>
-                    <span className="text-xs text-gray-500">Sell products</span>
-                  </label>
+                    <span className="text-sm font-medium">Customer</span>
+                    <span className={cn(
+                      "text-xs",
+                      selectedRole === 'customer' ? 'text-white/80' : 'text-gray-500'
+                    )}>Shop & buy</span>
+                  </button>
+                  
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedRole('trader');
+                      setValue('role', 'trader');
+                    }}
+                    className={cn(
+                      "relative flex flex-col items-center gap-2 p-4 rounded-xl cursor-pointer transition-all z-10",
+                      selectedRole === 'trader' ? 'text-white' : 'text-gray-400 hover:text-gray-200'
+                    )}
+                  >
+                    <div className={cn(
+                      "w-10 h-10 rounded-full flex items-center justify-center transition-colors",
+                      selectedRole === 'trader' ? 'bg-white/20' : 'bg-dark-600'
+                    )}>
+                      <Store className={cn(
+                        "w-5 h-5 transition-colors",
+                        selectedRole === 'trader' ? 'text-white' : 'text-gray-400'
+                      )} />
+                    </div>
+                    <span className="text-sm font-medium">Trader</span>
+                    <span className={cn(
+                      "text-xs",
+                      selectedRole === 'trader' ? 'text-white/80' : 'text-gray-500'
+                    )}>Sell products</span>
+                  </button>
                 </div>
+                <input type="hidden" {...register('role')} value={selectedRole} />
               </div>
 
               <Button 

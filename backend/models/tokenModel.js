@@ -5,7 +5,7 @@ const tokenModel = {
   // Create email token
   async createEmailToken(userId, type = 'verification') {
     const token = uuidv4();
-    const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
     
     const query = `
       INSERT INTO email_tokens (user_id, token, type, expires_at)

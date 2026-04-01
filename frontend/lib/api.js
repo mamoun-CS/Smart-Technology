@@ -146,6 +146,8 @@ export const ordersAPI = {
   getStats: () => api.get('/orders/admin/stats'),
   getTraderOrders: (params) => api.get('/orders/trader/orders', { params }),
   getTraderStats: () => api.get('/orders/trader/stats'),
+  checkLargeOrder: (totalQuantity) => api.get('/orders/check/large-order', { params: { total_quantity: totalQuantity } }),
+  calculateShipping: (city, deliveryMethod) => api.get('/orders/calculate/shipping', { params: { city, delivery_method: deliveryMethod } }),
 };
 
 // Reviews API

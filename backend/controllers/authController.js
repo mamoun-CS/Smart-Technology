@@ -35,7 +35,8 @@ const authController = {
         const tokenData = await tokenModel.createEmailToken(user.id, 'verification');
         await emailUtils.sendVerificationEmail(user.email, user.name, tokenData.token);
       } catch (emailError) {
-        console.warn('Email sending failed:', emailError.message);
+        console.error('Email sending failed during registration:', emailError.message);
+        console.error('Email error stack:', emailError.stack);
       }
 
       res.status(201).json({
@@ -301,7 +302,12 @@ const authController = {
       }
 
       const tokenData = await tokenModel.createEmailToken(user.id, 'password_reset');
-      await emailUtils.sendPasswordResetEmail(user.email, user.name, tokenData.token);
+      try {
+        await emailUtils.sendPasswordResetEmail(user.email, user.name, tokenData.token);
+      } catch (emailError) {
+        console.error('Password reset email sending failed:', emailError.message);
+        console.error('Password reset email error stack:', emailError.stack);
+      }
 
       res.json({
         success: true,

@@ -7,7 +7,7 @@ import { ArrowLeft, CreditCard, MapPin, Truck, Store, AlertCircle, Check } from 
 import { useCartStore } from '@/store';
 import { useAuthStore } from '@/store';
 import { getDictionary } from '@/i18n';
-import { formatPrice, cn, getProductImage } from '@/lib';
+import { formatPrice, cn, getProductImage, ordersAPI } from '@/lib';
 import { toast } from 'sonner';
 import { Navbar } from '@/components';
 import { Footer } from '@/components';
@@ -61,10 +61,8 @@ function CheckoutContent({ locale = 'en' }) {
       // Check if large order even without shipping info
       const totalQuantity = items.reduce((sum, item) => sum + item.quantity, 0);
       try {
-        const largeOrderResponse = await fetch(
-          `/api/orders/check/large-order?total_quantity=${totalQuantity}`
-        );
-        const largeOrderData = await largeOrderResponse.json();
+        const largeOrderResponse = await ordersAPI.checkLargeOrder(totalQuantity);
+        const largeOrderData = largeOrderResponse.data;
         
         if (largeOrderData.success) {
           setIsLargeOrder(largeOrderData.is_large_order);
@@ -77,10 +75,8 @@ function CheckoutContent({ locale = 'en' }) {
       if (!city || !deliveryMethod) return;
       
       try {
-        const shippingResponse = await fetch(
-          `/api/orders/calculate/shipping?city=${encodeURIComponent(city)}&delivery_method=${deliveryMethod}`
-        );
-        const shippingData = await shippingResponse.json();
+        const shippingResponse = await ordersAPI.calculateShipping(city, deliveryMethod);
+        const shippingData = shippingResponse.data;
         
         if (shippingData.success) {
           setShippingCost(shippingData.shipping_cost);
@@ -123,15 +119,8 @@ function CheckoutContent({ locale = 'en' }) {
       if (city) orderData.city = city;
       if (deliveryMethod) orderData.delivery_method = deliveryMethod;
       
-      const response = await fetch('/api/orders', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(orderData),
-      });
-      
-      const data = await response.json();
+      const response = await ordersAPI.create(orderData);
+      const data = response.data;
       
       if (data.success) {
         await clearCart();

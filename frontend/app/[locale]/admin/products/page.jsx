@@ -80,19 +80,14 @@ export default function ProductsManagement({ params: { locale = 'en' } }) {
       const newPreviews = files.map(file => URL.createObjectURL(file));
       setImagePreviews(prev => [...prev, ...newPreviews]);
 
-      // Upload images to server using native fetch
+      // Upload images to server using uploadAPI (includes auth token)
       const formDataUpload = new FormData();
       files.forEach(file => {
         formDataUpload.append('images', file);
       });
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}/upload/multiple`, {
-        method: 'POST',
-        credentials: 'include',
-        body: formDataUpload
-      });
-
-      const data = await response.json();
+      const response = await uploadAPI.uploadMultiple(formDataUpload);
+      const data = response.data;
 
       if (data.success) {
         // Replace blob URLs with server URLs
@@ -131,10 +126,7 @@ export default function ProductsManagement({ params: { locale = 'en' } }) {
     if (imageUrl && !imageUrl.startsWith('blob:')) {
       try {
         const filename = imageUrl.split('/').pop();
-        await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}/upload/${filename}`, {
-          method: 'DELETE',
-          credentials: 'include'
-        });
+        await uploadAPI.deleteImage(filename);
       } catch (error) {
         console.error('Error deleting image from server:', error);
       }

@@ -3,9 +3,9 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { Heart, ShoppingCart, Eye, Star } from '@/components/icons';
-import { formatPrice, cn, getProductImage } from '@/lib';
-import { useCartStore } from '@/store';
-import { useState } from 'react';
+import { formatPrice, cn, getProductImage, favoritesAPI } from '@/lib';
+import { useCartStore, useAuthStore } from '@/store';
+import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 
 export default function ProductCard({ 
@@ -17,10 +17,27 @@ export default function ProductCard({
   const [isHovered, setIsHovered] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
   const [imageError, setImageError] = useState(false);
+  const [isFavorite, setIsFavorite] = useState(false);
+  const [isTogglingFavorite, setIsTogglingFavorite] = useState(false);
   const { addItem } = useCartStore();
+  const { isAuthenticated } = useAuthStore();
   
   const productName = locale === 'ar' ? product.name_ar : product.name_en;
   const isInStock = product.stock > 0;
+  
+  // Check if product is in favorites on mount
+  useEffect(() => {
+    const checkFavoriteStatus = async () => {
+      if (!isAuthenticated) return;
+      try {
+        const response = await favoritesAPI.check(product.id);
+        setIsFavorite(response.data.is_favorite);
+      } catch (error) {
+        console.error('Error checking favorite status:', error);
+      }
+    };
+    checkFavoriteStatus();
+  }, [product.id, isAuthenticated]);
   
   const handleAddToCart = async (e) => {
     e.preventDefault();
@@ -42,6 +59,32 @@ export default function ProductCard({
 
   const handleImageError = () => {
     setImageError(true);
+  };
+  
+  const handleToggleFavorite = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (!isAuthenticated) {
+      toast.error(dict?.common?.pleaseLogin || 'Please login to add favorites');
+      return;
+    }
+    
+    setIsTogglingFavorite(true);
+    try {
+      const response = await favoritesAPI.toggle(product.id);
+      setIsFavorite(response.data.is_favorite);
+      toast.success(
+        response.data.is_favorite 
+          ? (dict?.common?.addedToFavorites || 'Added to favorites')
+          : (dict?.common?.removedFromFavorites || 'Removed from favorites')
+      );
+    } catch (error) {
+      console.error('Error toggling favorite:', error);
+      toast.error(dict?.errors?.networkError || 'Failed to update favorites');
+    } finally {
+      setIsTogglingFavorite(false);
+    }
   };
 
   return (
@@ -95,14 +138,28 @@ export default function ProductCard({
             isHovered ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-2'
           )}>
             <button 
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-              }}
-              className="p-2 bg-white dark:bg-dark-800 rounded-full shadow-md hover:bg-gray-50 dark:hover:bg-dark-700 transition-colors"
-              title={dict?.common?.wishlist || 'Add to wishlist'}
+              onClick={handleToggleFavorite}
+              disabled={isTogglingFavorite}
+              className={cn(
+                'p-2 bg-white dark:bg-dark-800 rounded-full shadow-md transition-colors',
+                isFavorite 
+                  ? 'hover:bg-red-50 dark:hover:bg-red-900/20' 
+                  : 'hover:bg-gray-50 dark:hover:bg-dark-700',
+                isTogglingFavorite && 'opacity-50 cursor-not-allowed'
+              )}
+              title={isFavorite 
+                ? (dict?.common?.removeFromFavorites || 'Remove from favorites')
+                : (dict?.common?.addToFavorites || 'Add to favorites')
+              }
             >
-              <Heart className="w-4 h-4 text-gray-600 dark:text-gray-300" />
+              <Heart 
+                className={cn(
+                  'w-4 h-4 transition-colors',
+                  isFavorite 
+                    ? 'text-red-500 fill-red-500' 
+                    : 'text-gray-600 dark:text-gray-300'
+                )} 
+              />
             </button>
             <button 
               onClick={(e) => {

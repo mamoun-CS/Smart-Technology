@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store';
-import { productsAPI, cartAPI } from '@/lib';
+import { productsAPI, cartAPI, uploadAPI, favoritesAPI } from '@/lib';
 import { getDictionary } from '@/i18n';
 import { formatPrice, cn, getProductImage } from '@/lib';
 import { toast } from 'sonner';
@@ -28,6 +28,8 @@ export default function ProductDetailPage({ params: { locale = 'en' } }) {
   const [selectedImage, setSelectedImage] = useState(0);
   const [isAddingToCart, setIsAddingToCart] = useState(false);
   const [imageErrors, setImageErrors] = useState({});
+  const [isFavorite, setIsFavorite] = useState(false);
+  const [isTogglingFavorite, setIsTogglingFavorite] = useState(false);
 
   // Handle image load errors
   const handleImageError = (index) => {
@@ -63,6 +65,20 @@ export default function ProductDetailPage({ params: { locale = 'en' } }) {
       fetchCategories();
     }
   }, [id, user]);
+
+  // Check if product is in favorites
+  useEffect(() => {
+    const checkFavoriteStatus = async () => {
+      if (!isAuthenticated || !product) return;
+      try {
+        const response = await favoritesAPI.check(product.id);
+        setIsFavorite(response.data.is_favorite);
+      } catch (error) {
+        console.error('Error checking favorite status:', error);
+      }
+    };
+    checkFavoriteStatus();
+  }, [product, isAuthenticated]);
 
   const fetchProduct = async () => {
     try {
@@ -111,6 +127,60 @@ export default function ProductDetailPage({ params: { locale = 'en' } }) {
     const newQuantity = quantity + delta;
     if (newQuantity >= 1 && newQuantity <= (product?.stock || 999)) {
       setQuantity(newQuantity);
+    }
+  };
+
+  const handleToggleFavorite = async () => {
+    if (!isAuthenticated) {
+      router.push(`/${locale}/login`);
+      return;
+    }
+
+    setIsTogglingFavorite(true);
+    try {
+      const response = await favoritesAPI.toggle(product.id);
+      setIsFavorite(response.data.is_favorite);
+      toast.success(
+        response.data.is_favorite 
+          ? (locale === 'ar' ? 'تمت الإضافة إلى المفضلة' : 'Added to favorites')
+          : (locale === 'ar' ? 'تمت الإزالة من المفضلة' : 'Removed from favorites')
+      );
+    } catch (error) {
+      console.error('Error toggling favorite:', error);
+      toast.error(locale === 'ar' ? 'فشل تحديث المفضلة' : 'Failed to update favorites');
+    } finally {
+      setIsTogglingFavorite(false);
+    }
+  };
+
+  const handleShare = async () => {
+    const productUrl = window.location.href;
+    const productName = locale === 'ar' ? product.name_ar : product.name_en;
+    
+    // Try Web Share API first (works on mobile and supported browsers)
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: productName,
+          text: `${productName} - ${formatPrice(getEffectivePrice(), locale)}`,
+          url: productUrl,
+        });
+        return;
+      } catch (error) {
+        // User cancelled or share failed, fall through to clipboard
+        if (error.name !== 'AbortError') {
+          console.error('Error sharing:', error);
+        }
+      }
+    }
+    
+    // Fallback: Copy to clipboard
+    try {
+      await navigator.clipboard.writeText(productUrl);
+      toast.success(locale === 'ar' ? 'تم نسخ الرابط' : 'Link copied to clipboard');
+    } catch (error) {
+      console.error('Error copying to clipboard:', error);
+      toast.error(locale === 'ar' ? 'فشل نسخ الرابط' : 'Failed to copy link');
     }
   };
 
@@ -170,19 +240,14 @@ export default function ProductDetailPage({ params: { locale = 'en' } }) {
       const newPreviews = files.map(file => URL.createObjectURL(file));
       setImagePreviews(prev => [...prev, ...newPreviews]);
 
-      // Upload images to server using native fetch
+      // Upload images to server using uploadAPI (includes auth token)
       const formDataUpload = new FormData();
       files.forEach(file => {
         formDataUpload.append('images', file);
       });
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}/upload/multiple`, {
-        method: 'POST',
-        credentials: 'include',
-        body: formDataUpload
-      });
-
-      const data = await response.json();
+      const response = await uploadAPI.uploadMultiple(formDataUpload);
+      const data = response.data;
 
       if (data.success) {
         // Replace blob URLs with server URLs
@@ -221,10 +286,7 @@ export default function ProductDetailPage({ params: { locale = 'en' } }) {
     if (imageUrl && !imageUrl.startsWith('blob:')) {
       try {
         const filename = imageUrl.split('/').pop();
-        await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}/upload/${filename}`, {
-          method: 'DELETE',
-          credentials: 'include'
-        });
+        await uploadAPI.deleteImage(filename);
       } catch (error) {
         console.error('Error deleting image from server:', error);
       }
@@ -557,10 +619,22 @@ export default function ProductDetailPage({ params: { locale = 'en' } }) {
                     : (locale === 'ar' ? 'أضف إلى السلة' : 'Add to Cart')
                   }
                 </Button>
-                <Button variant="outline" className="px-4">
-                  <Heart className="w-5 h-5" />
+                <Button 
+                  variant="outline" 
+                  className="px-4"
+                  onClick={handleToggleFavorite}
+                  disabled={isTogglingFavorite}
+                >
+                  <Heart 
+                    className={cn(
+                      'w-5 h-5 transition-colors',
+                      isFavorite 
+                        ? 'text-red-500 fill-red-500' 
+                        : 'text-gray-600 dark:text-gray-300'
+                    )} 
+                  />
                 </Button>
-                <Button variant="outline" className="px-4">
+                <Button variant="outline" className="px-4" onClick={handleShare}>
                   <Share2 className="w-5 h-5" />
                 </Button>
               </div>
