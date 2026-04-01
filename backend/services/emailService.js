@@ -21,14 +21,14 @@ const sendEmail = async ({ to, subject, html }) => {
     });
 
     if (error) {
-      console.error('Resend API error:', error);
+      console.error('❌ Email sending FAILED:', error);
       throw new Error(`Failed to send email: ${error.message}`);
     }
 
-    console.log('Email sent successfully:', data);
+    console.log('✅ Email sent SUCCESSFULLY:', data);
     return { success: true, data };
   } catch (error) {
-    console.error('Email sending failed:', error.message);
+    console.error('❌ Email sending FAILED:', error.message);
     throw error;
   }
 };
