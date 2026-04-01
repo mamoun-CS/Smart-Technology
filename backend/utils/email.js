@@ -1,25 +1,120 @@
 const nodemailer = require('nodemailer');
+const dns = require('dns');
+const net = require('net');
 require('dotenv').config();
 
-// Configure SMTP transporter for Gmail
-const transporter = nodemailer.createTransport({
+// Diagnostic: Check DNS resolution and network connectivity
+const checkEmailConnectivity = async () => {
+  console.log('\n=== EMAIL CONNECTIVITY DIAGNOSTICS ===');
+  console.log('EMAIL_USER:', process.env.EMAIL_USER ? 'Set' : 'NOT SET');
+  console.log('EMAIL_PASS:', process.env.EMAIL_PASS ? 'Set (length: ' + process.env.EMAIL_PASS.length + ')' : 'NOT SET');
+  
+  // Test DNS resolution
+  dns.resolve('smtp.gmail.com', (err, addresses) => {
+    if (err) {
+      console.error('❌ DNS Resolution FAILED:', err.message);
+    } else {
+      console.log('✅ DNS Resolution SUCCESS:', addresses);
+    }
+  });
+  
+  // Test port 587 connectivity
+  const testPort587 = new net.Socket();
+  testPort587.setTimeout(5000);
+  testPort587.on('connect', () => {
+    console.log('✅ Port 587 connectivity: SUCCESS');
+    testPort587.destroy();
+  });
+  testPort587.on('timeout', () => {
+    console.error('❌ Port 587 connectivity: TIMEOUT (5s)');
+    testPort587.destroy();
+  });
+  testPort587.on('error', (err) => {
+    console.error('❌ Port 587 connectivity: ERROR -', err.message);
+  });
+  testPort587.connect(587, 'smtp.gmail.com');
+  
+  // Test port 465 connectivity (alternative SSL port)
+  const testPort465 = new net.Socket();
+  testPort465.setTimeout(5000);
+  testPort465.on('connect', () => {
+    console.log('✅ Port 465 connectivity: SUCCESS');
+    testPort465.destroy();
+  });
+  testPort465.on('timeout', () => {
+    console.error('❌ Port 465 connectivity: TIMEOUT (5s)');
+    testPort465.destroy();
+  });
+  testPort465.on('error', (err) => {
+    console.error('❌ Port 465 connectivity: ERROR -', err.message);
+  });
+  testPort465.connect(465, 'smtp.gmail.com');
+  
+  console.log('=== END DIAGNOSTICS ===\n');
+};
+
+// Run diagnostics on startup
+checkEmailConnectivity();
+
+// Configure SMTP transporter for Gmail (initially using port 587)
+let transporter = nodemailer.createTransport({
   host: 'smtp.gmail.com',
   port: 587,
   secure: false,
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS
-  }
+  },
+  connectionTimeout: 10000, // 10 seconds
+  greetingTimeout: 10000,
+  socketTimeout: 10000
 });
 
-// Verify connection on startup
-transporter.verify((error, success) => {
-  if (error) {
-    console.warn('Email connection failed:', error.message);
-  } else {
-    console.log('Email server is ready');
+// Verify connection on startup with fallback to port 465
+const verifyEmailConnection = async () => {
+  console.log('\n=== VERIFYING EMAIL CONNECTION ===');
+  
+  // Try port 587 first
+  try {
+    await transporter.verify();
+    console.log('✅ Email server is ready (Port 587)');
+    return;
+  } catch (error) {
+    console.error('❌ Port 587 failed:', error.message);
+    console.log('🔄 Attempting fallback to port 465 (SSL)...');
   }
-});
+  
+  // Fallback to port 465 (SSL)
+  const transporterSSL = nodemailer.createTransport({
+    host: 'smtp.gmail.com',
+    port: 465,
+    secure: true,
+    auth: {
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASS
+    },
+    connectionTimeout: 10000,
+    greetingTimeout: 10000,
+    socketTimeout: 10000
+  });
+  
+  try {
+    await transporterSSL.verify();
+    console.log('✅ Email server is ready (Port 465 SSL)');
+    // Update the main transporter to use SSL
+    transporter = transporterSSL;
+  } catch (sslError) {
+    console.error('❌ Port 465 also failed:', sslError.message);
+    console.error('\n⚠️  EMAIL WILL NOT WORK! Possible causes:');
+    console.error('   1. Network/firewall blocking SMTP ports (587, 465)');
+    console.error('   2. DNS cannot resolve smtp.gmail.com');
+    console.error('   3. No internet connectivity');
+    console.error('   4. Gmail security settings blocking connection');
+    console.error('\n💡 RECOMMENDATION: Check network connectivity and firewall rules');
+  }
+};
+
+verifyEmailConnection();
 
 // Wrap sendMail to handle errors gracefully
 const safeSendMail = async (mailOptions) => {
