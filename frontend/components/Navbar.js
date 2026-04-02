@@ -70,45 +70,45 @@ export default function Navbar({ locale = 'en', dict = {} }) {
   return (
     <nav className={cn(
       'fixed top-0 left-0 right-0 z-50 transition-all duration-300',
-      mounted && isScrolled 
-        ? 'bg-white/95 dark:bg-gray-900/95 backdrop-blur-md shadow-sm' 
-        : 'bg-transparent'
+     mounted && isScrolled
+  ? 'bg-white shadow-md'
+  : 'bg-white'
     )}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16 md:h-20">
+        <div className="grid grid-cols-[auto_1fr_auto] items-center h-16 md:h-20">
           {/* Logo */}
-          <Link href={`/${locale}`} className="flex items-center gap-2">
-            <div className="w-10 h-10 rounded-lg bg-gradient-to-r from-primary-700 via-primary-600 to-orange-400 flex items-center justify-center">
-              <span className="text-white font-bold text-xl">S</span>
-            </div>
-            <span className="text-xl font-bold gradient-text hidden sm:block">
-              {navT.brandName || 'Smart Technology'}
-            </span>
+          <Link href={`/${locale}`} className="flex items-center gap-3 hover:opacity-80 transition-opacity">
+            <img
+  src="/images/logo.png"
+  alt="Smart Technology Logo"
+  className="h-14 sm:h-16 md:h-20 w-auto object-contain"
+  loading="eager"
+/>
           </Link>
 
           {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center gap-8">
+          <div className="hidden md:flex items-center justify-center gap-8">
             {/* Show login/register buttons only after hydration to prevent hydration mismatch */}
             {!mounted || !isAuthenticated ? (
               <>
-                <Link 
-                  href={`/${locale}`} 
+                <Link
+                  href={`/${locale}`}
                   className={cn(
                     'font-medium transition-colors',
-                    pathname === `/${locale}` 
-                      ? 'text-primary-600' 
-                      : 'text-gray-600 dark:text-gray-300 hover:text-primary-600'
+                    pathname === `/${locale}`
+                      ? 'text-gray-800'
+                      : 'text-gray-800/90 hover:text-gray-800'
                   )}
                 >
                   {navT.home || t.home}
                 </Link>
-                <Link 
-                  href={`/${locale}/products`} 
+                <Link
+                  href={`/${locale}/products`}
                   className={cn(
                     'font-medium transition-colors',
-                    pathname.includes('/products') 
-                      ? 'text-primary-600' 
-                      : 'text-gray-600 dark:text-gray-300 hover:text-primary-600'
+                    pathname.includes('/products')
+                      ? 'text-gray-800'
+                      : 'text-gray-800/90 hover:text-gray-800'
                   )}
                 >
                   {navT.products || 'Products'}
@@ -116,36 +116,36 @@ export default function Navbar({ locale = 'en', dict = {} }) {
               </>
             ) : (
               <>
-                <Link 
-                  href={`/${locale}/profile`} 
+                <Link
+                  href={`/${locale}/profile`}
                   className={cn(
                     'font-medium transition-colors',
-                    pathname.includes('/profile') 
-                      ? 'text-primary-600' 
-                      : 'text-gray-600 dark:text-gray-300 hover:text-primary-600'
+                    pathname.includes('/profile')
+                      ? 'text-gray-800'
+                      : 'text-gray-800/90 hover:text-gray-800'
                   )}
                 >
                   {navT.profile || 'Profile'}
                 </Link>
-                <Link 
-                  href={`/${locale}/products`} 
+                <Link
+                  href={`/${locale}/products`}
                   className={cn(
                     'font-medium transition-colors',
-                    pathname.includes('/products') 
-                      ? 'text-primary-600' 
-                      : 'text-gray-600 dark:text-gray-300 hover:text-primary-600'
+                    pathname.includes('/products')
+                      ? 'text-gray-800'
+                      : 'text-gray-800/90 hover:text-gray-800'
                   )}
                 >
                   {navT.products || 'Products'}
                 </Link>
                 {user?.role === 'admin' && (
-                  <Link 
-                    href={`/${locale}/admin`} 
+                  <Link
+                    href={`/${locale}/admin`}
                     className={cn(
                       'font-medium transition-colors',
-                      pathname.includes('/admin') 
-                        ? 'text-primary-600' 
-                        : 'text-gray-600 dark:text-gray-300 hover:text-primary-600'
+                      pathname.includes('/admin')
+                        ? 'text-gray-800'
+                        : 'text-gray-800/90 hover:text-gray-800'
                     )}
                   >
                     {navT.admin}
@@ -156,13 +156,13 @@ export default function Navbar({ locale = 'en', dict = {} }) {
           </div>
 
           {/* Right Side */}
-          <div className="flex items-center gap-4">
+          <div className="flex items-center justify-self-end gap-4">
             {/* Language Switcher */}
             <Link 
               href={pathname.replace(`/${locale}`, locale === 'en' ? '/ar' : '/en')}
-              className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+              className="p-2 rounded-lg hover:bg-white/10 transition-colors"
             >
-              <Globe className="w-5 h-5 text-gray-600 dark:text-gray-300" />
+              <Globe className="w-5 h-5 text-gray-800" />
             </Link>
 
             {/* Notifications */}
@@ -170,11 +170,11 @@ export default function Navbar({ locale = 'en', dict = {} }) {
               <div className="relative">
                 <button 
                   onClick={() => setShowNotifications(!showNotifications)}
-                  className="relative p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                  className="relative p-2 rounded-lg hover:bg-white/10 transition-colors"
                 >
-                  <Bell className="w-5 h-5 text-gray-600 dark:text-gray-300" />
+                  <Bell className="w-5 h-5 text-gray-800" />
                   {unreadCount > 0 && (
-                    <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
+                    <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-gray-800 text-xs rounded-full flex items-center justify-center">
                       {unreadCount > 9 ? '9+' : unreadCount}
                     </span>
                   )}
@@ -250,11 +250,11 @@ export default function Navbar({ locale = 'en', dict = {} }) {
             {/* Cart */}
             <Link 
               href={`/${locale}/cart`}
-              className="relative p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+              className="relative p-2 rounded-lg hover:bg-white/10 transition-colors"
             >
-              <ShoppingCart className="w-5 h-5 text-gray-600 dark:text-gray-300" />
+              <ShoppingCart className="w-5 h-5 text-gray-800" />
               {mounted && cartItemCount > 0 && (
-                <span className="absolute -top-1 -right-1 w-5 h-5 bg-primary-600 text-white text-xs rounded-full flex items-center justify-center">
+                <span className="absolute -top-1 -right-1 w-5 h-5 bg-primary-600 text-gray-800 text-xs rounded-full flex items-center justify-center">
                   {cartItemCount}
                 </span>
               )}
@@ -263,15 +263,15 @@ export default function Navbar({ locale = 'en', dict = {} }) {
             {/* User Menu */}
             {mounted && isAuthenticated ? (
               <div className="relative group">
-                <button className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
-                  <User className="w-5 h-5 text-gray-600 dark:text-gray-300" />
+                <button className="p-2 rounded-lg hover:bg-white/10 transition-colors">
+                  <User className="w-5 h-5 text-gray-800" />
                 </button>
                 <div className={cn(
                   "absolute mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200",
                   direction === 'rtl' ? "left-0 right-auto" : "right-0"
                 )}>
                   <div className="p-3 border-b border-gray-200 dark:border-gray-700">
-                    <p className="font-medium text-gray-900 dark:text-white">{user?.name}</p>
+                    <p className="font-medium text-gray-900 dark:text-gray-800">{user?.name}</p>
                     <p className="text-sm text-gray-500">{user?.email}</p>
                     <span className="text-xs text-primary-600 capitalize">{user?.role}</span>
                   </div>
@@ -337,12 +337,12 @@ export default function Navbar({ locale = 'en', dict = {} }) {
             {/* Mobile Menu Button */}
             <button 
               onClick={() => setIsOpen(!isOpen)}
-              className="md:hidden p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
+              className="md:hidden p-2 rounded-lg hover:bg-white/10"
             >
               {isOpen ? (
-                <X className="w-5 h-5 text-gray-600 dark:text-gray-300" />
+                <X className="w-5 h-5 text-gray-800" />
               ) : (
-                <Menu className="w-5 h-5 text-gray-600 dark:text-gray-300" />
+                <Menu className="w-5 h-5 text-gray-800" />
               )}
             </button>
           </div>
@@ -350,21 +350,21 @@ export default function Navbar({ locale = 'en', dict = {} }) {
 
         {/* Mobile Menu */}
         {isOpen && (
-          <div className="md:hidden py-4 border-t border-gray-200 dark:border-gray-700 animate-fadeIn">
+          <div className="md:hidden py-4 border-t border-white/10 animate-fadeIn">
             <div className="flex flex-col gap-4">
               {/* Show login/register buttons only after hydration to prevent hydration mismatch */}
               {!mounted || !isAuthenticated ? (
                 <>
-                  <Link 
+                  <Link
                     href={`/${locale}`}
-                    className="px-4 py-2 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg"
+                    className="px-4 py-2 text-gray-800 hover:bg-white/10 rounded-lg"
                     onClick={() => setIsOpen(false)}
                   >
                     {navT.home}
                   </Link>
-                  <Link 
+                  <Link
                     href={`/${locale}/products`}
-                    className="px-4 py-2 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg"
+                    className="px-4 py-2 text-gray-800 hover:bg-white/10 rounded-lg"
                     onClick={() => setIsOpen(false)}
                   >
                     {navT.products}
@@ -372,40 +372,40 @@ export default function Navbar({ locale = 'en', dict = {} }) {
                 </>
               ) : (
                 <>
-                  <Link 
+                  <Link
                     href={`/${locale}/profile`}
-                    className="px-4 py-2 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg"
+                    className="px-4 py-2 text-gray-800 hover:bg-white/10 rounded-lg"
                     onClick={() => setIsOpen(false)}
                   >
                     {navT.profile || 'Profile'}
                   </Link>
-                  <Link 
+                  <Link
                     href={`/${locale}/favorites`}
-                    className="px-4 py-2 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg"
+                    className="px-4 py-2 text-gray-800 hover:bg-white/10 rounded-lg"
                     onClick={() => setIsOpen(false)}
                   >
                     {navT.favorites || 'Favorites'}
                   </Link>
-                  <Link 
+                  <Link
                     href={`/${locale}/products`}
-                    className="px-4 py-2 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg"
+                    className="px-4 py-2 text-gray-800 hover:bg-white/10 rounded-lg"
                     onClick={() => setIsOpen(false)}
                   >
                     {navT.products}
                   </Link>
                   {user?.role === 'admin' && (
-                    <Link 
+                    <Link
                       href={`/${locale}/admin`}
-                      className="px-4 py-2 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg"
+                      className="px-4 py-2 text-gray-800 hover:bg-white/10 rounded-lg"
                       onClick={() => setIsOpen(false)}
                     >
                       {navT.admin}
                     </Link>
                   )}
                   {user?.role === 'trader' && (
-                    <Link 
+                    <Link
                       href={`/${locale}/trader`}
-                      className="px-4 py-2 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg"
+                      className="px-4 py-2 text-gray-800 hover:bg-white/10 rounded-lg"
                       onClick={() => setIsOpen(false)}
                     >
                       {navT.trader}

@@ -10,7 +10,7 @@ import {
 import { useAuthStore } from '@/store';
 import { productsAPI, uploadAPI } from '@/lib';
 import { getDictionary } from '@/i18n';
-import { formatPrice, formatDate, cn, getProductImage } from '@/lib';
+import { formatCurrencyLabel, formatDate, cn, getProductImage } from '@/lib';
 import { toast } from 'sonner';
 
 export default function ProductsManagement({ params: { locale = 'en' } }) {
@@ -404,13 +404,13 @@ export default function ProductsManagement({ params: { locale = 'en' } }) {
                     </td>
                     <td className="px-6 py-4">
                       <span className="text-sm font-semibold text-gray-900 dark:text-white">
-                        {formatPrice(product.unit_price, locale)}
+                        {formatCurrencyLabel(product.unit_price, locale)}
                       </span>
                     </td>
                     <td className="px-6 py-4">
                       {product.wholesale_price ? (
                         <span className="text-sm text-gray-600 dark:text-gray-300">
-                          {formatPrice(product.wholesale_price, locale)}
+                          {formatCurrencyLabel(product.wholesale_price, locale)}
                         </span>
                       ) : (
                         <span className="text-sm text-gray-400">-</span>

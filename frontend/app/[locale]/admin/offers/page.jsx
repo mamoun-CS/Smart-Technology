@@ -7,7 +7,7 @@ import { Plus, Edit, Trash2, Tag, Calendar, Percent, DollarSign, Users, X } from
 import { useAuthStore } from '@/store';
 import { offersAPI } from '@/lib';
 import { getDictionary } from '@/i18n';
-import { formatPrice, formatDate, cn } from '@/lib';
+import { formatCurrencyLabel, formatDate, cn } from '@/lib';
 import { toast } from 'sonner';
 
 
@@ -280,7 +280,7 @@ export default function OffersManagement({ params: { locale = 'en' } }) {
                       <p className="text-sm text-gray-500">
                         {offer.discount_type === 'percentage' 
                           ? `${offer.discount_value}% ${locale === 'ar' ? 'خصم' : 'off'}`
-                          : `${formatPrice(offer.discount_value, locale)} ${locale === 'ar' ? 'خصم' : 'off'}`
+                          : `${formatCurrencyLabel(offer.discount_value, locale)} ${locale === 'ar' ? 'خصم' : 'off'}`
                         }
                       </p>
                     </div>
@@ -304,7 +304,7 @@ export default function OffersManagement({ params: { locale = 'en' } }) {
                   {offer.min_order_amount > 0 && (
                     <div className="flex justify-between">
                       <span className="text-gray-500">{locale === 'ar' ? 'الحد الأدنى' : 'Min Order'}</span>
-                      <span>{formatPrice(offer.min_order_amount, locale)}</span>
+                      <span>{formatCurrencyLabel(offer.min_order_amount, locale)}</span>
                     </div>
                   )}
                   <div className="flex justify-between">

@@ -7,7 +7,7 @@ import { Plus, Edit, Trash2, Layers, Package, X, Search } from '@/components/ico
 import { useAuthStore } from '@/store';
 import { productsAPI } from '@/lib';
 import { getDictionary } from '@/i18n';
-import { formatPrice, formatDate, cn } from '@/lib';
+import { formatCurrencyLabel, formatDate, cn } from '@/lib';
 import { toast } from 'sonner';
 
 export default function CategoriesManagement({ params: { locale = 'en' } }) {

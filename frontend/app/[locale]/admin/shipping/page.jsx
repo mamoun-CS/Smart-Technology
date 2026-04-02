@@ -10,7 +10,7 @@ import {
 import { useAuthStore } from '@/store';
 import { shippingAPI } from '@/lib';
 import { getDictionary } from '@/i18n';
-import { formatPrice, formatDate, cn } from '@/lib';
+import { formatCurrencyLabel, formatDate, cn } from '@/lib';
 import { toast } from 'sonner';
 
 export default function ShippingManagement({ params: { locale = 'en' } }) {
@@ -222,7 +222,7 @@ export default function ShippingManagement({ params: { locale = 'en' } }) {
             </div>
             <div>
               <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                {formatPrice(areas.reduce((sum, a) => sum + (a.price || 0), 0) / (areas.length || 1), locale)}
+                {formatCurrencyLabel(areas.reduce((sum, a) => sum + (a.price || 0), 0) / (areas.length || 1), locale)}
               </p>
               <p className="text-xs text-gray-500 dark:text-gray-400">
                 {locale === 'ar' ? 'متوسط التكلفة' : 'Avg. Cost'}
@@ -286,7 +286,7 @@ export default function ShippingManagement({ params: { locale = 'en' } }) {
                     </td>
                     <td className="px-6 py-4">
                       <span className="text-sm font-semibold text-gray-900 dark:text-white">
-                        {formatPrice(area.price, locale)}
+                        {formatCurrencyLabel(area.price, locale)}
                       </span>
                     </td>
                     <td className="px-6 py-4">

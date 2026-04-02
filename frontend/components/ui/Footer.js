@@ -55,9 +55,12 @@ export default function Footer({ locale = 'en', dict = {} }) {
           {/* Brand & Newsletter */}
           <div className="lg:col-span-1">
             <div className="flex items-center gap-3 mb-6">
-              <div className="logo">
-                <span className="logo-text">S</span>
-              </div>
+              <img
+                src="/images/logo.png"
+                alt="Smart Technology Logo"
+                className="h-10 w-auto object-contain"
+                loading="lazy"
+              />
               <span className="text-xl font-bold text-white">
                 {navT.brandName || 'Smart Technology'}
               </span>

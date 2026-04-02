@@ -20,6 +20,11 @@ export function formatPrice(price, locale = 'en') {
   }).format(numPrice);
 }
 
+export const formatCurrencyLabel = (amount, locale) => {
+  const currencyLabel = locale === 'ar' ? 'شيكل' : 'ILS';
+  return `${amount} ${currencyLabel}`;
+};
+
 export function formatDate(date, locale = 'en') {
   // Handle null, undefined, or invalid values
   if (!date) return '';

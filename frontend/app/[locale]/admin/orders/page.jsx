@@ -10,7 +10,7 @@ import {
 import { useAuthStore } from '@/store';
 import { ordersAPI } from '@/lib';
 import { getDictionary } from '@/i18n';
-import { formatPrice, formatDate, getStatusColor, cn, getProductImage } from '@/lib';
+import { formatCurrencyLabel, formatDate, getStatusColor, cn, getProductImage } from '@/lib';
 import { toast } from 'sonner';
 
 const STATUSES = {
@@ -254,11 +254,11 @@ export default function OrdersManagement({ params: { locale = 'en' } }) {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div>
                         <p className="text-sm font-semibold text-gray-900 dark:text-white">
-                          {formatPrice(order.total_amount, locale)}
+                          {formatCurrencyLabel(order.total_amount, locale)}
                         </p>
                         {order.shipping_cost > 0 && (
                           <p className="text-xs text-gray-500 dark:text-gray-400">
-                            +{formatPrice(order.shipping_cost, locale)} {locale === 'ar' ? 'شحن' : 'shipping'}
+                            +{formatCurrencyLabel(order.shipping_cost, locale)} {locale === 'ar' ? 'شحن' : 'shipping'}
                           </p>
                         )}
                       </div>
@@ -419,12 +419,12 @@ export default function OrdersManagement({ params: { locale = 'en' } }) {
                               {locale === 'ar' ? item.name_ar : item.name_en}
                             </p>
                             <p className="text-xs text-gray-500 dark:text-gray-400">
-                              {item.quantity} x {formatPrice(item.price, locale)}
+                              {item.quantity} x {formatCurrencyLabel(item.price, locale)}
                             </p>
                           </div>
                         </div>
                         <p className="text-sm font-semibold text-gray-900 dark:text-white">
-                          {formatPrice(item.price * item.quantity, locale)}
+                          {formatCurrencyLabel(item.price * item.quantity, locale)}
                         </p>
                       </div>
                     ))}
@@ -436,23 +436,23 @@ export default function OrdersManagement({ params: { locale = 'en' } }) {
                   <div className="space-y-2">
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-500 dark:text-gray-400">{locale === 'ar' ? 'المجموع الفرعي' : 'Subtotal'}</span>
-                      <span className="text-gray-900 dark:text-white">{formatPrice(selectedOrder.subtotal, locale)}</span>
+                      <span className="text-gray-900 dark:text-white">{formatCurrencyLabel(selectedOrder.subtotal, locale)}</span>
                     </div>
                     {selectedOrder.shipping_cost > 0 && (
                       <div className="flex justify-between text-sm">
                         <span className="text-gray-500 dark:text-gray-400">{locale === 'ar' ? 'تكلفة الشحن' : 'Shipping'}</span>
-                        <span className="text-gray-900 dark:text-white">{formatPrice(selectedOrder.shipping_cost, locale)}</span>
+                        <span className="text-gray-900 dark:text-white">{formatCurrencyLabel(selectedOrder.shipping_cost, locale)}</span>
                       </div>
                     )}
                     {selectedOrder.discount > 0 && (
                       <div className="flex justify-between text-sm text-green-600 dark:text-green-400">
                         <span>{locale === 'ar' ? 'الخصم' : 'Discount'}</span>
-                        <span>-{formatPrice(selectedOrder.discount, locale)}</span>
+                        <span>-{formatCurrencyLabel(selectedOrder.discount, locale)}</span>
                       </div>
                     )}
                     <div className="flex justify-between text-base font-bold border-t border-gray-200 dark:border-gray-600 pt-2 mt-2">
                       <span className="text-gray-900 dark:text-white">{locale === 'ar' ? 'الإجمالي' : 'Total'}</span>
-                      <span className="text-gray-900 dark:text-white">{formatPrice(selectedOrder.total_amount, locale)}</span>
+                      <span className="text-gray-900 dark:text-white">{formatCurrencyLabel(selectedOrder.total_amount, locale)}</span>
                     </div>
                   </div>
                 </div>

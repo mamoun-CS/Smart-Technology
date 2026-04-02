@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store';
 import { productsAPI, cartAPI, uploadAPI, favoritesAPI } from '@/lib';
 import { getDictionary } from '@/i18n';
-import { formatPrice, cn, getProductImage } from '@/lib';
+import { formatCurrencyLabel, cn, getProductImage } from '@/lib';
 import { toast } from 'sonner';
 import { Navbar } from '@/components';
 import { Footer } from '@/components';
@@ -162,7 +162,7 @@ export default function ProductDetailPage({ params: { locale = 'en' } }) {
       try {
         await navigator.share({
           title: productName,
-          text: `${productName} - ${formatPrice(getEffectivePrice(), locale)}`,
+          text: `${productName} - ${formatCurrencyLabel(getEffectivePrice(), locale)}`,
           url: productUrl,
         });
         return;
@@ -475,11 +475,11 @@ export default function ProductDetailPage({ params: { locale = 'en' } }) {
                 {/* Retail Price - Always visible */}
                 <div className="flex items-baseline gap-3">
                   <span className="text-3xl font-bold text-gray-900 dark:text-white">
-                    {formatPrice(getEffectivePrice(), locale)}
+                    {formatCurrencyLabel(getEffectivePrice(), locale)}
                   </span>
                   {shouldApplyWholesale && (
                     <span className="text-lg text-gray-500 line-through">
-                      {formatPrice(product.unit_price, locale)}
+                      {formatCurrencyLabel(product.unit_price, locale)}
                     </span>
                   )}
                 </div>
@@ -493,7 +493,7 @@ export default function ProductDetailPage({ params: { locale = 'en' } }) {
                           {locale === 'ar' ? 'سعر الجملة' : 'Wholesale Price'}
                         </p>
                         <p className="text-2xl font-bold text-green-600 dark:text-green-400">
-                          {formatPrice(product.wholesale_price, locale)}
+                          {formatCurrencyLabel(product.wholesale_price, locale)}
                         </p>
                       </div>
                       {product.min_order_quantity && (
@@ -510,7 +510,7 @@ export default function ProductDetailPage({ params: { locale = 'en' } }) {
                     {shouldApplyWholesale && (
                       <div className="mt-3 pt-3 border-t border-green-200 dark:border-green-700">
                         <p className="text-sm text-green-700 dark:text-green-300">
-                          {locale === 'ar' ? 'أنت توفر' : 'You save'}: {formatPrice(getSavings(), locale)}
+                          {locale === 'ar' ? 'أنت توفر' : 'You save'}: {formatCurrencyLabel(getSavings(), locale)}
                         </p>
                       </div>
                     )}

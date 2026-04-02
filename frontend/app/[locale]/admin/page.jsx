@@ -11,7 +11,7 @@ import {
 import { useAuthStore } from '@/store';
 import { adminAPI, productsAPI, shippingAPI } from '@/lib';
 import { getDictionary } from '@/i18n';
-import { formatPrice, formatDate, getStatusColor, cn } from '@/lib';
+import { formatCurrencyLabel, formatDate, getStatusColor, cn } from '@/lib';
 import { toast } from 'sonner';
 
 export default function AdminDashboard({ params: { locale = 'en' } }) {
@@ -218,7 +218,7 @@ export default function AdminDashboard({ params: { locale = 'en' } }) {
               {locale === 'ar' ? 'إجمالي الإيرادات' : 'Total Revenue'}
             </p>
             <p className="text-3xl font-bold text-gray-900 dark:text-white mt-1">
-              {formatPrice(stats?.orders?.total_revenue || 0, locale)}
+              {formatCurrencyLabel(stats?.orders?.total_revenue || 0, locale)}
             </p>
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
               {locale === 'ar' ? 'هذا الشهر' : 'This month'}
@@ -281,7 +281,7 @@ export default function AdminDashboard({ params: { locale = 'en' } }) {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className="text-sm font-semibold text-gray-900 dark:text-white">
-                          {formatPrice(order.total_amount, locale)}
+                          {formatCurrencyLabel(order.total_amount, locale)}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -329,7 +329,7 @@ export default function AdminDashboard({ params: { locale = 'en' } }) {
                       </p>
                     </div>
                     <span className="text-sm font-semibold text-green-600 dark:text-green-400">
-                      {formatPrice(product.total_revenue, locale)}
+                      {formatCurrencyLabel(product.total_revenue, locale)}
                     </span>
                   </div>
                 ))

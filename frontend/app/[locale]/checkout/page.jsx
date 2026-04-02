@@ -7,7 +7,7 @@ import { ArrowLeft, CreditCard, MapPin, Truck, Store, AlertCircle, Check } from 
 import { useCartStore } from '@/store';
 import { useAuthStore } from '@/store';
 import { getDictionary } from '@/i18n';
-import { formatPrice, cn, getProductImage, ordersAPI } from '@/lib';
+import { formatCurrencyLabel, cn, getProductImage, ordersAPI } from '@/lib';
 import { toast } from 'sonner';
 import { Navbar } from '@/components';
 import { Footer } from '@/components';
@@ -409,7 +409,7 @@ function CheckoutContent({ locale = 'en' }) {
                           {locale === 'ar' ? 'الكمية:' : 'Qty:'} {item.quantity}
                         </p>
                         <p className="text-sm font-semibold text-brand-red">
-                          {formatPrice(item.price * item.quantity, locale)}
+                          {formatCurrencyLabel(item.price * item.quantity, locale)}
                         </p>
                       </div>
                     </div>
@@ -420,7 +420,7 @@ function CheckoutContent({ locale = 'en' }) {
                 <div className="space-y-4 border-t border-dark-600 pt-4">
                   <div className="flex justify-between">
                     <span className="text-gray-400">{cartT.subtotal || 'Subtotal'}</span>
-                    <span className="font-semibold text-white">{formatPrice(subtotal, locale)}</span>
+                    <span className="font-semibold text-white">{formatCurrencyLabel(subtotal, locale)}</span>
                   </div>
                   
                   <div className="flex justify-between">
@@ -432,7 +432,7 @@ function CheckoutContent({ locale = 'en' }) {
                             {locale === 'ar' ? 'مجاني' : 'Free'}
                           </span>
                         ) : (
-                          formatPrice(shippingCost, locale)
+                          formatCurrencyLabel(shippingCost, locale)
                         )
                       ) : city && deliveryMethod ? (
                         <span className="text-gray-500">—</span>
@@ -447,7 +447,7 @@ function CheckoutContent({ locale = 'en' }) {
                   <div className="border-t border-dark-600 pt-4 flex justify-between">
                     <span className="font-semibold text-white">{cartT.total || 'Total'}</span>
                     <span className="font-bold text-xl text-brand-red">
-                      {formatPrice(grandTotal, locale)}
+                      {formatCurrencyLabel(grandTotal, locale)}
                     </span>
                   </div>
                 </div>

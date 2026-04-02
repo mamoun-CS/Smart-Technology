@@ -77,9 +77,12 @@ export default function RegisterPage({ params: { locale = 'en' } }) {
         <div className="w-full max-w-md px-4">
           {/* Logo */}
           <div className="text-center mb-8">
-            <div className="logo w-16 h-16 mx-auto mb-4">
-              <span className="logo-text text-3xl">S</span>
-            </div>
+            <img
+              src="/images/logo.png"
+              alt="Smart Technology Logo"
+              className="h-14 w-auto mx-auto mb-4 object-contain"
+              loading="eager"
+            />
             <h1 className="text-3xl font-bold text-white">{t.registerTitle}</h1>
             <p className="text-gray-400 mt-2">{t.registerSubtitle}</p>
           </div>

@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store';
 import { ordersAPI } from '@/lib';
 import { getDictionary } from '@/i18n';
-import { formatPrice, formatDate, getStatusColor, cn, getProductImage } from '@/lib';
+import { formatCurrencyLabel, formatDate, getStatusColor, cn, getProductImage } from '@/lib';
 import { Navbar } from '@/components';
 import { MapPin, Truck, Store, AlertCircle } from '@/components/icons';
 
@@ -136,7 +136,7 @@ export default function OrdersPage({ params: { locale = 'en' } }) {
                           )}
                           {order.shipping_cost > 0 && (
                             <div className="text-sm text-gray-500">
-                              {locale === 'ar' ? 'تكلفة الشحن:' : 'Shipping:'} {formatPrice(order.shipping_cost, locale)}
+                              {locale === 'ar' ? 'تكلفة الشحن:' : 'Shipping:'} {formatCurrencyLabel(order.shipping_cost, locale)}
                             </div>
                           )}
                         </div>
@@ -183,11 +183,11 @@ export default function OrdersPage({ params: { locale = 'en' } }) {
                           <div className="flex-1">
                             <p className="font-medium">{locale === 'ar' ? item.name_ar : item.name_en}</p>
                             <p className="text-sm text-gray-500">
-                              {item.quantity} x {formatPrice(item.price, locale)}
+                              {item.quantity} x {formatCurrencyLabel(item.price, locale)}
                             </p>
                           </div>
                           <p className="font-semibold text-primary-600">
-                            {formatPrice(item.price * item.quantity, locale)}
+                            {formatCurrencyLabel(item.price * item.quantity, locale)}
                           </p>
                         </div>
                       ))}
@@ -196,7 +196,7 @@ export default function OrdersPage({ params: { locale = 'en' } }) {
                       <div>
                         <p className="text-sm text-gray-500">{ordersT.total}</p>
                         <p className="text-xl font-bold text-primary-600">
-                          {formatPrice(order.total_price, locale)}
+                          {formatCurrencyLabel(order.total_price, locale)}
                         </p>
                       </div>
                       <Link 

@@ -8,7 +8,7 @@ import { ArrowRight, Star, Zap, Shield, Truck, ChevronRight, Sparkles } from '@/
 import { useAuthStore } from '@/store';
 import { productsAPI } from '@/lib';
 import { getDictionary } from '@/i18n';
-import { formatPrice, cn } from '@/lib';
+import { formatCurrencyLabel, cn } from '@/lib';
 import { Navbar } from '@/components';
 import { Footer } from '@/components';
 import { ProductCard } from '@/components';

@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store';
 import { offersAPI } from '@/lib';
 import { getDictionary } from '@/i18n';
-import { formatPrice, formatDate, cn } from '@/lib';
+import { formatCurrencyLabel, formatDate, cn } from '@/lib';
 import { toast } from 'sonner';
 import { Navbar } from '@/components';
 
@@ -112,12 +112,12 @@ export default function OffersPage({ params: { locale = 'en' } }) {
                   <span className="font-medium">
                     {appliedOffer.offer.discount_type === 'percentage' 
                       ? `${appliedOffer.offer.discount_value}% off applied!`
-                      : `${formatPrice(appliedOffer.discount, locale)} off applied!`
+                      : `${formatCurrencyLabel(appliedOffer.discount, locale)} off applied!`
                     }
                   </span>
                 </div>
                 <p className="text-sm text-gray-600 mt-1">
-                  New total: {formatPrice(appliedOffer.final_total, locale)}
+                  New total: {formatCurrencyLabel(appliedOffer.final_total, locale)}
                 </p>
               </div>
             )}
@@ -162,7 +162,7 @@ export default function OffersPage({ params: { locale = 'en' } }) {
                     <p className="text-lg font-semibold mb-4">
                       {offer.discount_type === 'percentage' 
                         ? `${offer.discount_value}% OFF`
-                        : `${formatPrice(offer.discount_value, locale)} OFF`
+                        : `${formatCurrencyLabel(offer.discount_value, locale)} OFF`
                       }
                     </p>
                     

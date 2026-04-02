@@ -9,7 +9,7 @@ import { useForm } from 'react-hook-form';
 import { useAuthStore } from '@/store';
 import { productsAPI, ordersAPI } from '@/lib';
 import { getDictionary } from '@/i18n';
-import { formatPrice, cn, getProductImage } from '@/lib';
+import { formatCurrencyLabel, cn, getProductImage } from '@/lib';
 import { toast } from 'sonner';
 import { Navbar } from '@/components';
 
@@ -187,7 +187,7 @@ export default function TraderDashboard({ params: { locale = 'en' } }) {
                 </div>
                 <div>
                   <p className="text-sm text-gray-500">{traderT.sales || 'Total Sales'}</p>
-                  <p className="text-2xl font-bold">{formatPrice(stats?.totalSales || 0, locale)}</p>
+                  <p className="text-2xl font-bold">{formatCurrencyLabel(stats?.totalSales || 0, locale)}</p>
                 </div>
               </div>
             </div>
@@ -239,7 +239,7 @@ export default function TraderDashboard({ params: { locale = 'en' } }) {
                           </div>
                         </td>
                         <td className="px-4 py-3 font-medium text-primary-600">
-                          {formatPrice(product.price, locale)}
+                          {formatCurrencyLabel(product.price, locale)}
                         </td>
                         <td className="px-4 py-3">
                           <span className={cn(

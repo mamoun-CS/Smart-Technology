@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store';
 import { favoritesAPI, cartAPI } from '@/lib';
 import { getDictionary } from '@/i18n';
-import { formatPrice, cn, getProductImage } from '@/lib';
+import { formatCurrencyLabel, cn, getProductImage } from '@/lib';
 import { toast } from 'sonner';
 import { Navbar } from '@/components';
 import { Footer } from '@/components';
@@ -185,11 +185,11 @@ export default function FavoritesPage({ params: { locale = 'en' } }) {
                     {/* Price */}
                     <div className="flex items-baseline gap-2 mb-3">
                       <span className="text-lg font-bold text-gray-900 dark:text-white">
-                        {formatPrice(product.unit_price || product.price, locale)}
+                        {formatCurrencyLabel(product.unit_price || product.price, locale)}
                       </span>
                       {product.wholesale_price && (
                         <span className="text-sm text-gray-500 line-through">
-                          {formatPrice(product.wholesale_price, locale)}
+                          {formatCurrencyLabel(product.wholesale_price, locale)}
                         </span>
                       )}
                     </div>

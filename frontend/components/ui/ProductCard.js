@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { Heart, ShoppingCart, Eye, Star } from '@/components/icons';
-import { formatPrice, cn, getProductImage, favoritesAPI } from '@/lib';
+import { formatCurrencyLabel, cn, getProductImage, favoritesAPI } from '@/lib';
 import { useCartStore, useAuthStore } from '@/store';
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
@@ -237,11 +237,11 @@ export default function ProductCard({
           {/* Price */}
           <div className="mt-auto flex items-center gap-2">
             <span className="text-lg font-bold text-brand-red">
-              {formatPrice(product.price, locale)}
+              {formatCurrencyLabel(product.price, locale)}
             </span>
             {product.original_price && product.original_price > product.price && (
               <span className="text-sm text-gray-400 line-through">
-                {formatPrice(product.original_price, locale)}
+                {formatCurrencyLabel(product.original_price, locale)}
               </span>
             )}
           </div>

@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store';
 import { favoritesAPI, productsAPI, adminAPI } from '@/lib';
 import { getDictionary } from '@/i18n';
-import { formatPrice, cn, getProductImage } from '@/lib';
+import { formatCurrencyLabel, cn, getProductImage } from '@/lib';
 import { toast } from 'sonner';
 import { 
   Heart, Package, TrendingUp, Users, ShoppingCart, 
@@ -243,12 +243,12 @@ export default function AdminAnalyticsPage({ params: { locale = 'en' } }) {
                     <td className="px-6 py-4">
                       <div>
                         <span className="text-sm font-semibold text-gray-900 dark:text-white">
-                          {formatPrice(product.unit_price, locale)}
+                          {formatCurrencyLabel(product.unit_price, locale)}
                         </span>
                         {product.wholesale_price && (
                           <p className="text-xs text-gray-500 dark:text-gray-400">
                             {locale === 'ar' ? 'جملة: ' : 'Wholesale: '}
-                            {formatPrice(product.wholesale_price, locale)}
+                            {formatCurrencyLabel(product.wholesale_price, locale)}
                           </p>
                         )}
                       </div>

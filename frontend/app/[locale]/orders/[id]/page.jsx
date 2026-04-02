@@ -7,7 +7,7 @@ import Link from 'next/link';
 import { useAuthStore } from '@/store';
 import { ordersAPI } from '@/lib';
 import { getDictionary } from '@/i18n';
-import { formatPrice, formatDate, getStatusColor, cn, getProductImage } from '@/lib';
+import { formatCurrencyLabel, formatDate, getStatusColor, cn, getProductImage } from '@/lib';
 import { Navbar } from '@/components';
 import { 
   Package, 
@@ -231,7 +231,7 @@ export default function OrderDetailsPage() {
                       <span className="text-gray-500 dark:text-gray-400">
                         {locale === 'ar' ? 'تكلفة الشحن' : 'Shipping Cost'}: 
                       </span>{' '}
-                      {formatPrice(order.shipping_cost, locale)}
+                      {formatCurrencyLabel(order.shipping_cost, locale)}
                     </p>
                   )}
                 </div>
@@ -280,7 +280,7 @@ export default function OrderDetailsPage() {
                           <span className="font-medium">
                             {locale === 'ar' ? 'السعر للوحدة' : 'Unit Price'}:
                           </span>{' '}
-                          {formatPrice(item.price, locale)}
+                          {formatCurrencyLabel(item.price, locale)}
                         </p>
                         <p className="text-sm text-gray-600 dark:text-gray-400">
                           <span className="font-medium">
@@ -292,7 +292,7 @@ export default function OrderDetailsPage() {
                           <span>
                             {locale === 'ar' ? 'السعر المطبق' : 'Applied Price'}:
                           </span>{' '}
-                          {formatPrice(item.price * item.quantity, locale)}
+                          {formatCurrencyLabel(item.price * item.quantity, locale)}
                         </p>
                       </div>
                     </div>
@@ -300,7 +300,7 @@ export default function OrderDetailsPage() {
                     {/* Item Total */}
                     <div className="flex-shrink-0 text-right">
                       <p className="font-semibold text-gray-900 dark:text-white">
-                        {formatPrice(item.price * item.quantity, locale)}
+                        {formatCurrencyLabel(item.price * item.quantity, locale)}
                       </p>
                     </div>
                   </div>
@@ -320,7 +320,7 @@ export default function OrderDetailsPage() {
                 <div className="flex justify-between text-gray-600 dark:text-gray-400">
                   <span>{locale === 'ar' ? 'المجموع الفرعي' : 'Subtotal'}</span>
                   <span>
-                    {formatPrice(
+                    {formatCurrencyLabel(
                       order.items?.reduce((sum, item) => sum + (item.price * item.quantity), 0) || 0,
                       locale
                     )}
@@ -330,14 +330,14 @@ export default function OrderDetailsPage() {
                 {order.shipping_cost > 0 && (
                   <div className="flex justify-between text-gray-600 dark:text-gray-400">
                     <span>{locale === 'ar' ? 'تكلفة الشحن' : 'Shipping'}</span>
-                    <span>{formatPrice(order.shipping_cost, locale)}</span>
+                    <span>{formatCurrencyLabel(order.shipping_cost, locale)}</span>
                   </div>
                 )}
                 
                 <div className="border-t border-gray-200 dark:border-gray-700 pt-3">
                   <div className="flex justify-between text-lg font-semibold text-gray-900 dark:text-white">
                     <span>{locale === 'ar' ? 'الإجمالي' : 'Total'}</span>
-                    <span>{formatPrice(order.total_price, locale)}</span>
+                    <span>{formatCurrencyLabel(order.total_price, locale)}</span>
                   </div>
                 </div>
               </div>

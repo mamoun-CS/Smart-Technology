@@ -6,7 +6,7 @@ import Image from 'next/image';
 import { Search, Filter, X, ShoppingCart, Star, Grid, List, SlidersHorizontal } from '@/components/icons';
 import { productsAPI, reviewsAPI } from '@/lib';
 import { getDictionary } from '@/i18n';
-import { formatPrice, debounce, cn } from '@/lib';
+import { formatCurrencyLabel, debounce, cn } from '@/lib';
 import { useCartStore } from '@/store';
 import { useAuthStore } from '@/store';
 import { toast } from 'sonner';

@@ -28,26 +28,32 @@ const orderController = {
       const user = await userModel.findById(req.user.id);
       
       // Customize email based on order status
-      if (order.status === 'under_review') {
-        await emailService.sendEmail({
-          to: user.email,
-          subject: 'Order Under Review - Smart Technology',
-          html: `
-            <h2>Thank you for your order, ${user.name}!</h2>
-            <p>Your order #${order.id} has been received and is currently under review.</p>
-            <p><strong>We will contact you after confirming your address.</strong></p>
-            <p>Order Details:</p>
-            <ul>
-              <li>Total: ${order.total_price}</li>
-              ${order.city ? `<li>City: ${order.city}</li>` : ''}
-              ${order.delivery_method ? `<li>Delivery Method: ${order.delivery_method}</li>` : ''}
-              <li>Shipping Cost: ${order.shipping_cost}</li>
-            </ul>
-            <p>Our team will review your order and contact you shortly.</p>
-          `
-        });
-      } else {
-        await emailService.sendOrderConfirmationEmail(user.email, user.name, order);
+      try {
+        if (order.status === 'under_review') {
+          await emailService.sendEmail({
+            to: user.email,
+            subject: 'Order Under Review - Smart Technology',
+            html: `
+              <h2>Thank you for your order, ${user.name}!</h2>
+              <p>Your order #${order.id} has been received and is currently under review.</p>
+              <p><strong>We will contact you after confirming your address.</strong></p>
+              <p>Order Details:</p>
+              <ul>
+                <li>Total: ${order.total_price}</li>
+                ${order.city ? `<li>City: ${order.city}</li>` : ''}
+                ${order.delivery_method ? `<li>Delivery Method: ${order.delivery_method}</li>` : ''}
+                <li>Shipping Cost: ${order.shipping_cost}</li>
+              </ul>
+              <p>Our team will review your order and contact you shortly.</p>
+            `
+          });
+        } else {
+          const locale = req.headers['accept-language']?.startsWith('ar') ? 'ar' : 'en';
+          await emailService.sendOrderConfirmationEmail(user.email, user.name, order, locale);
+        }
+      } catch (emailError) {
+        // Log email error but don't fail the order creation
+        console.warn('Email sending failed:', emailError.message);
       }
 
       res.status(201).json({
@@ -168,16 +174,21 @@ const orderController = {
       if (status === 'confirmed' || status === 'contacted') {
         const user = await userModel.findById(order.user_id);
         if (user) {
-          await emailService.sendEmail({
-            to: user.email,
-            subject: `Order Status Updated - Smart Technology`,
-            html: `
-              <h2>Hello ${user.name},</h2>
-              <p>Your order #${order.id} status has been updated to: <strong>${status}</strong></p>
-              ${status === 'contacted' ? '<p>Our team has contacted you regarding your order.</p>' : ''}
-              <p>Thank you for shopping with Smart Technology!</p>
-            `
-          });
+          try {
+            await emailService.sendEmail({
+              to: user.email,
+              subject: `Order Status Updated - Smart Technology`,
+              html: `
+                <h2>Hello ${user.name},</h2>
+                <p>Your order #${order.id} status has been updated to: <strong>${status}</strong></p>
+                ${status === 'contacted' ? '<p>Our team has contacted you regarding your order.</p>' : ''}
+                <p>Thank you for shopping with Smart Technology!</p>
+              `
+            });
+          } catch (emailError) {
+            // Log email error but don't fail the order status update
+            console.warn('Email sending failed:', emailError.message);
+          }
         }
       }
 

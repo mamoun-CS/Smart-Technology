@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store';
 import { cartAPI } from '@/lib';
 import { getDictionary } from '@/i18n';
-import { formatPrice, cn, getProductImage } from '@/lib';
+import { formatCurrencyLabel, cn, getProductImage } from '@/lib';
 import { toast } from 'sonner';
 import { Navbar } from '@/components';
 import { Footer } from '@/components';
@@ -285,7 +285,7 @@ export default function CartPage({ params: { locale = 'en' } }) {
                               "font-medium",
                               isWholesaleApplied ? "line-through text-gray-400" : "text-gray-900 dark:text-white"
                             )}>
-                              {formatPrice(item.unit_price || item.price, locale)}
+                              {formatCurrencyLabel(item.unit_price || item.price, locale)}
                             </span>
                           </div>
                           
@@ -299,7 +299,7 @@ export default function CartPage({ params: { locale = 'en' } }) {
                                 "font-medium",
                                 isWholesaleApplied ? "text-green-600 dark:text-green-400" : "text-gray-900 dark:text-white"
                               )}>
-                                {formatPrice(item.wholesale_price, locale)}
+                                {formatCurrencyLabel(item.wholesale_price, locale)}
                               </span>
                               {item.min_order_quantity && (
                                 <span className="text-xs text-gray-500 dark:text-gray-400">
@@ -315,7 +315,7 @@ export default function CartPage({ params: { locale = 'en' } }) {
                               {locale === 'ar' ? 'السعر المطبق:' : 'Applied:'}
                             </span>
                             <span className="text-lg font-bold text-gray-900 dark:text-white">
-                              {formatPrice(itemPrice, locale)}
+                              {formatCurrencyLabel(itemPrice, locale)}
                             </span>
                             {isWholesaleApplied && (
                               <span className="px-2 py-0.5 bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 text-xs rounded-full">
@@ -413,7 +413,7 @@ export default function CartPage({ params: { locale = 'en' } }) {
                       {locale === 'ar' ? 'المجموع الفرعي' : 'Subtotal'}
                     </span>
                     <span className="font-medium text-gray-900 dark:text-white">
-                      {formatPrice(subtotal, locale)}
+                      {formatCurrencyLabel(subtotal, locale)}
                     </span>
                   </div>
 
@@ -425,7 +425,7 @@ export default function CartPage({ params: { locale = 'en' } }) {
                         {locale === 'ar' ? 'التوفير' : 'Savings'}
                       </span>
                       <span className="font-medium">
-                        -{formatPrice(savings, locale)}
+                        -{formatCurrencyLabel(savings, locale)}
                       </span>
                     </div>
                   )}
@@ -446,7 +446,7 @@ export default function CartPage({ params: { locale = 'en' } }) {
                       {locale === 'ar' ? 'الإجمالي' : 'Total'}
                     </span>
                     <span className="text-lg font-bold text-gray-900 dark:text-white">
-                      {formatPrice(subtotal, locale)}
+                      {formatCurrencyLabel(subtotal, locale)}
                     </span>
                   </div>
 
