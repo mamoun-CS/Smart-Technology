@@ -1,137 +1,62 @@
+require('dotenv').config();
 const { google } = require('googleapis');
+const OAuth2 = google.auth.OAuth2;
 
-// ---------------------------------------------------------------------------
-// Gmail API OAuth2 Setup
-// ---------------------------------------------------------------------------
-// To obtain the credentials below, follow these steps:
-//
-// 1. Go to https://console.cloud.google.com/ → create (or select) a project.
-// 2. Enable the **Gmail API** for that project.
-// 3. Navigate to **APIs & Services → Credentials** and create an **OAuth 2.0
-//    Client ID** (type: "Web application").
-//    - Copy the Client ID  → GMAIL_CLIENT_ID
-//    - Copy the Client Secret → GMAIL_CLIENT_SECRET
-//    - Add http://localhost as an authorised redirect URI → GMAIL_REDIRECT_URI
-//
-// 4. Generate a refresh token:
-//    - Use the OAuth 2.0 Playground (https://developers.google.com/oauthplayground/)
-//      or a local script that performs the 3-legged OAuth flow.
-//    - Authorise scope: https://mail.google.com/
-//    - Exchange the authorisation code for tokens.
-//    - Copy the refresh_token → GMAIL_REFRESH_TOKEN
-//
-// 5. Set GMAIL_SENDER_EMAIL to the Gmail address you authorised with.
-// ---------------------------------------------------------------------------
+const GMAIL_CLIENT_ID = process.env.GMAIL_CLIENT_ID;
+const GMAIL_CLIENT_SECRET = process.env.GMAIL_CLIENT_SECRET;
+const GMAIL_REFRESH_TOKEN = process.env.GMAIL_REFRESH_TOKEN;
+const GMAIL_SENDER_EMAIL = process.env.GMAIL_SENDER_EMAIL;
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
 
-const CLIENT_ID = process.env.GMAIL_CLIENT_ID;
-const CLIENT_SECRET = process.env.GMAIL_CLIENT_SECRET;
-const REDIRECT_URI = process.env.GMAIL_REDIRECT_URI;
-const REFRESH_TOKEN = process.env.GMAIL_REFRESH_TOKEN;
-const SENDER_EMAIL = process.env.GMAIL_SENDER_EMAIL;
+let oauth2Client = null;
+let gmailService = null;
 
-/**
- * Create and return an authenticated Gmail API client.
- * The OAuth2 client uses a long-lived refresh token so the service
- * can obtain fresh access tokens on every request without user interaction.
- *
- * @returns {import('googleapis').gmail_v1.Gmail}
- */
-function getGmailClient() {
-  const oauth2Client = new google.auth.OAuth2(
-    CLIENT_ID,
-    CLIENT_SECRET,
-    REDIRECT_URI
-  );
+function getGmailService() {
+    if (gmailService) return gmailService;
 
-  oauth2Client.setCredentials({
-    refresh_token: REFRESH_TOKEN,
-  });
+    oauth2Client = new OAuth2(
+        GMAIL_CLIENT_ID,
+        GMAIL_CLIENT_SECRET,
+        'http://localhost'
+    );
 
-  return google.gmail({ version: 'v1', auth: oauth2Client });
-}
-
-/**
- * Build a MIME message and encode it in base64url format required by the
- * Gmail API `users.messages.send` endpoint.
- *
- * @param {Object} options
- * @param {string} options.from   - Sender email address
- * @param {string} options.to     - Recipient email address
- * @param {string} options.subject - Email subject
- * @param {string} options.html   - HTML body
- * @returns {string} base64url-encoded raw message
- */
-function buildRawMessage({ from, to, subject, html }) {
-  const mimeMessage = [
-    `From: ${from}`,
-    `To: ${to}`,
-    `Subject: ${subject}`,
-    'MIME-Version: 1.0',
-    'Content-Type: text/html; charset=utf-8',
-    'Content-Transfer-Encoding: base64',
-    '',
-    Buffer.from(html, 'utf-8').toString('base64'),
-  ].join('\r\n');
-
-  // Gmail API requires base64url encoding (RFC 4648 §5)
-  return Buffer.from(mimeMessage)
-    .toString('base64')
-    .replace(/\+/g, '-')
-    .replace(/\//g, '_')
-    .replace(/=+$/, '');
-}
-
-// ---------------------------------------------------------------------------
-// Public API
-// ---------------------------------------------------------------------------
-
-/**
- * Send an email via the Gmail API using OAuth2 authentication.
- *
- * @param {Object} options
- * @param {string} options.to      - Recipient email address
- * @param {string} options.subject - Email subject line
- * @param {string} options.html    - HTML content of the email
- * @returns {Promise<Object>}      - Gmail API response data
- */
-const sendEmail = async ({ to, subject, html }) => {
-  try {
-    const gmail = getGmailClient();
-    const raw = buildRawMessage({
-      from: SENDER_EMAIL,
-      to,
-      subject,
-      html,
+    oauth2Client.setCredentials({
+        refresh_token: GMAIL_REFRESH_TOKEN
     });
 
+    gmailService = google.gmail({ version: 'v1', auth: oauth2Client });
+    return gmailService;
+}
+
+async function sendEmail({ to, subject, html }) {
+    const gmail = getGmailService();
+
+    const email = [
+        `To: ${to}`,
+        'Content-Type: text/html; charset=utf-8',
+        'MIME-Version: 1.0',
+        `Subject: ${subject}`,
+        '',
+        html
+    ].join('\n');
+
+    const encodedEmail = Buffer.from(email)
+        .toString('base64')
+        .replace(/\+/g, '-')
+        .replace(/\//g, '_')
+        .replace(/=+$/, '');
+
     const response = await gmail.users.messages.send({
-      userId: 'me',
-      requestBody: { raw },
+        userId: 'me',
+        requestBody: { raw: encodedEmail }
     });
 
     console.log('Email sent successfully:', { to, subject, messageId: response.data.id });
     return { success: true, data: response.data };
-  } catch (error) {
-    console.error('Email sending FAILED:', {
-      to,
-      subject,
-      error: error.message,
-      code: error.code,
-    });
-    throw new Error(`Failed to send email: ${error.message}`);
-  }
-};
+}
 
-/**
- * Send account verification email.
- *
- * @param {string} email - Recipient email
- * @param {string} name  - User's name
- * @param {string} token - Verification token
- * @returns {Promise<Object>}
- */
 const sendVerificationEmail = async (email, name, token) => {
-  const verificationUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/verify-email/${token}`;
+  const verificationUrl = `${process.env.FRONTEND_URL?.split(',')[0] || 'http://localhost:3000'}/verify-email/${token}`;
 
   const html = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -162,16 +87,8 @@ const sendVerificationEmail = async (email, name, token) => {
   });
 };
 
-/**
- * Send password reset email.
- *
- * @param {string} email - Recipient email
- * @param {string} name  - User's name
- * @param {string} token - Password reset token
- * @returns {Promise<Object>}
- */
 const sendPasswordResetEmail = async (email, name, token) => {
-  const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/reset-password/${token}`;
+  const resetUrl = `${process.env.FRONTEND_URL?.split(',')[0] || 'http://localhost:3000'}/reset-password/${token}`;
 
   const html = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -202,15 +119,6 @@ const sendPasswordResetEmail = async (email, name, token) => {
   });
 };
 
-/**
- * Send order confirmation email.
- *
- * @param {string} email  - Recipient email
- * @param {string} name   - User's name
- * @param {Object} order  - Order details
- * @param {string} locale - Language code ('ar' | 'en')
- * @returns {Promise<Object>}
- */
 const sendOrderConfirmationEmail = async (email, name, order, locale = 'en') => {
   const currencyLabel = locale === 'ar' ? 'شيكل' : 'ILS';
   const html = `
@@ -242,14 +150,6 @@ const sendOrderConfirmationEmail = async (email, name, order, locale = 'en') => 
   });
 };
 
-/**
- * Send contact form email to the admin.
- *
- * @param {string} name    - Sender's name
- * @param {string} email   - Sender's email
- * @param {string} message - Contact message
- * @returns {Promise<Object>}
- */
 const sendContactFormEmail = async (name, email, message) => {
   const html = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -272,19 +172,12 @@ const sendContactFormEmail = async (name, email, message) => {
   `;
 
   return sendEmail({
-    to: process.env.ADMIN_EMAIL || 'admin@smarttech.com',
+    to: ADMIN_EMAIL || 'admin@smarttech.com',
     subject: `Contact Form: Message from ${name}`,
     html,
   });
 };
 
-/**
- * Send admin notification email.
- *
- * @param {string} subject - Email subject
- * @param {string} message - Notification message (HTML)
- * @returns {Promise<Object>}
- */
 const sendAdminNotification = async (subject, message) => {
   const html = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -304,7 +197,7 @@ const sendAdminNotification = async (subject, message) => {
   `;
 
   return sendEmail({
-    to: process.env.ADMIN_EMAIL || 'admin@smarttech.com',
+    to: ADMIN_EMAIL || 'admin@smarttech.com',
     subject,
     html,
   });

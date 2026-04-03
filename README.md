@@ -136,7 +136,7 @@ A full-stack e-commerce web application built with Node.js/Express backend and N
 - PostgreSQL (recommended) / MySQL
 - JWT for authentication
 - Bcrypt for password hashing
-- NodeMailer for emails
+- Zoho Mail API for emails (Axios)
 - Socket.io for real-time features
 - Passport.js for OAuth
 
@@ -202,7 +202,12 @@ Smart technology/
 │   │   ├── shipping.js
 │   │   └── tickets.js
 │   ├── utils/             # Utilities
-│   │   ├── email.js
+│   │   ├── jwt.js
+│   │   ├── passport.js
+│   │   ├── socket.js
+│   │   └── zohoAuth.js
+│   ├── services/          # Business logic services
+│   │   ├── emailService.js
 │   │   ├── jwt.js
 │   │   ├── passport.js
 │   │   └── socket.js
@@ -314,12 +319,20 @@ DB_NAME=smart_tech
 DB_USER=postgres
 DB_PASSWORD=your_password
 JWT_SECRET=your_jwt_secret
-JWT_REFRESH_SECRET=your_refresh_secret
-EMAIL_HOST=smtp.gmail.com
-EMAIL_PORT=587
-EMAIL_USER=your_email@gmail.com
-EMAIL_PASSWORD=your_email_password
-CLIENT_URL=http://localhost:3000
+JWT_EXPIRES_IN=15m
+JWT_REFRESH_EXPIRES_IN=7d
+FRONTEND_URL=http://localhost:3000
+
+# Zoho Mail API (email sending)
+ZOHO_EMAIL=your-email@zoho.com
+ZOHO_ACCOUNT_ID=your-account-id
+ZOHO_CLIENT_ID=your-client-id
+ZOHO_CLIENT_SECRET=your-client-secret
+ZOHO_REFRESH_TOKEN=your-refresh-token
+ZOHO_API_BASE_URL=https://mail.zoho.com
+ZOHO_OAUTH_BASE_URL=https://accounts.zoho.com
+
+ADMIN_EMAIL=admin@smarttech.com
 ```
 
 4. Set up database:
