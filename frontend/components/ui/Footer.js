@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Mail, Phone, MapPin, Facebook, Twitter, Instagram, Youtube, Send } from '@/components/icons';
+import { Mail, Phone, MapPin, Facebook, Send } from '@/components/icons';
 import { useState, useEffect } from 'react';
 import { cn, getDirection } from '@/lib';
 
@@ -24,7 +24,7 @@ export default function Footer({ locale = 'en', dict = {} }) {
     { href: `/${locale}/products`, label: navT.products },
     { href: `/${locale}/about`, label: homeT.about },
     { href: `/${locale}/contact`, label: homeT.contact },
-    { href: `/${locale}/support`, label: navT.support },
+    
   ];
 
   const accountLinks = [
@@ -35,10 +35,8 @@ export default function Footer({ locale = 'en', dict = {} }) {
   ];
 
   const socialLinks = [
-    { icon: Facebook, href: '#', label: 'Facebook' },
-    { icon: Twitter, href: '#', label: 'Twitter' },
-    { icon: Instagram, href: '#', label: 'Instagram' },
-    { icon: Youtube, href: '#', label: 'Youtube' },
+    { icon: Facebook, href: 'https://www.facebook.com/share/1CbctLX9dA/?mibextid=wwXIfr', label: 'Facebook' },
+    { icon: 'whatsapp', href: 'https://wa.me/972568356505', label: 'WhatsApp' },
   ];
 
   const handleSubscribe = (e) => {
@@ -99,8 +97,18 @@ export default function Footer({ locale = 'en', dict = {} }) {
                   href={social.href}
                   className="p-2.5 bg-dark-800 rounded-lg hover:bg-brand-red transition-colors"
                   aria-label={social.label}
+                  target="_blank"
+                  rel="noopener noreferrer"
                 >
-                  <social.icon className="w-5 h-5" />
+                  {social.icon === 'whatsapp' ? (
+                    <img 
+                      src="/whatsapp.png" 
+                      alt="whatsapp" 
+                      className="w-5 h-5"
+                    />
+                  ) : (
+                    <social.icon className="w-5 h-5" />
+                  )}
                 </a>
               ))}
             </div>
@@ -153,19 +161,19 @@ export default function Footer({ locale = 'en', dict = {} }) {
               <li className="flex items-start gap-3">
                 <MapPin className="w-5 h-5 text-brand-red mt-0.5 shrink-0" />
                 <span className="text-gray-400">
-                  {dict?.footer?.address || '123 Tech Street, Smart City, SC 12345'}
+                  {dict?.footer?.address || 'Jerusalem - Abu Dis, Water Association Building'}
                 </span>
               </li>
               <li className="flex items-center gap-3">
                 <Phone className="w-5 h-5 text-brand-red shrink-0" />
-                <a href="tel:+1234567890" className="text-gray-400 hover:text-brand-red transition-colors">
-                  {dict?.footer?.phone || '+1 234 567 890'}
+                <a href="tel:+972568356505" className="text-gray-400 hover:text-brand-red transition-colors">
+                  {dict?.footer?.phone || '+972 56-835-6505'}
                 </a>
               </li>
               <li className="flex items-center gap-3">
                 <Mail className="w-5 h-5 text-brand-red shrink-0" />
-                <a href={`mailto:${process.env.NEXT_PUBLIC_APP_EMAIL || 'info@smarttech.com'}`} className="text-gray-400 hover:text-brand-red transition-colors">
-                  {process.env.NEXT_PUBLIC_APP_EMAIL || 'info@smarttech.com'}
+                <a href="mailto:smart_tech2008@hotmail.com" className="text-gray-400 hover:text-brand-red transition-colors">
+                  {dict?.footer?.email || 'smart_tech2008@hotmail.com'}
                 </a>
               </li>
             </ul>
