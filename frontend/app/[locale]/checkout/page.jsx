@@ -7,7 +7,7 @@ import { ArrowLeft, CreditCard, MapPin, Truck, Store, AlertCircle, Check } from 
 import { useCartStore } from '@/store';
 import { useAuthStore } from '@/store';
 import { getDictionary } from '@/i18n';
-import { formatCurrencyLabel, cn, getProductImage, ordersAPI } from '@/lib';
+import { formatCurrencyLabel, cn, getProductImage, ordersAPI, isValidPhoneNumber, validateCheckoutForm, isAdmin, canAccessCheckout } from '@/lib';
 import { toast } from 'sonner';
 import { Navbar } from '@/components';
 import { Footer } from '@/components';
@@ -29,20 +29,42 @@ function CheckoutContent({ locale = 'en' }) {
   const [isProcessing, setIsProcessing] = useState(false);
   const [shippingCost, setShippingCost] = useState(null);
   const [isLargeOrder, setIsLargeOrder] = useState(false);
+  const [errors, setErrors] = useState({});
   
   // Get city and delivery method from URL params
   const city = searchParams.get('city') || '';
   const deliveryMethod = searchParams.get('delivery_method') || '';
   
-  // Form state
+  // Form state - include full_name and phone from user profile
   const [formData, setFormData] = useState({
+    full_name: user?.name || '',
+    phone: user?.phone || '',
     shipping_address: '',
     payment_method: 'credit_card'
   });
 
+  // Validate form and check if submit should be enabled
+  const isFormValid = () => {
+    const validation = validateCheckoutForm(formData, locale, deliveryMethod);
+    setErrors(validation.errors);
+    return validation.isValid;
+  };
+
   useEffect(() => {
     if (!isAuthenticated) {
       router.push(`/${locale}/login`);
+      return;
+    }
+    
+    // Check if user is admin - redirect to admin dashboard
+    if (isAdmin(user)) {
+      router.push(`/${locale}/admin`);
+      return;
+    }
+    
+    // Check if user is not a customer
+    if (!canAccessCheckout(user)) {
+      router.push(`/${locale}/admin`);
       return;
     }
     
@@ -51,9 +73,15 @@ function CheckoutContent({ locale = 'en' }) {
       return;
     }
     
+    setFormData(prev => ({
+      ...prev,
+      full_name: user?.name || prev.full_name,
+      phone: user?.phone || prev.phone
+    }));
+    
     fetchCart();
     setIsLoading(false);
-  }, [isAuthenticated, items.length, fetchCart, router, locale]);
+  }, [isAuthenticated, user, items.length, fetchCart, router, locale]);
 
   // Calculate shipping and check large order
   useEffect(() => {
@@ -92,14 +120,18 @@ function CheckoutContent({ locale = 'en' }) {
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+    // Clear error when field is being edited
+    if (errors[name]) {
+      setErrors(prev => ({ ...prev, [name]: null }));
+    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // Only require shipping address if delivery method is not pickup
-    if (deliveryMethod !== 'pickup' && !formData.shipping_address.trim()) {
-      toast.error(locale === 'ar' ? 'الرجاء إدخال عنوان الشحن' : 'Please enter shipping address');
+    // Validate required fields before submitting
+    if (!isFormValid()) {
+      toast.error(locale === 'ar' ? 'الرجاء إكمال جميع الحقول المطلوبة' : 'Please complete all required fields');
       return;
     }
     
@@ -107,6 +139,8 @@ function CheckoutContent({ locale = 'en' }) {
     
     try {
       const orderData = {
+        full_name: formData.full_name,
+        phone: formData.phone,
         payment_method: formData.payment_method,
       };
       
@@ -140,7 +174,8 @@ function CheckoutContent({ locale = 'en' }) {
       }
     } catch (error) {
       console.error('Error placing order:', error);
-      toast.error(locale === 'ar' ? 'حدث خطأ أثناء تقديم الطلب' : 'Error placing order');
+      const errorMessage = error.response?.data?.message || (locale === 'ar' ? 'حدث خطأ أثناء تقديم الطلب' : 'Error placing order');
+      toast.error(errorMessage);
     } finally {
       setIsProcessing(false);
     }
@@ -200,6 +235,22 @@ function CheckoutContent({ locale = 'en' }) {
             {/* Checkout Form */}
             <div className="flex-1">
               <form onSubmit={handleSubmit} className="space-y-6">
+                {/* Error Summary */}
+                {Object.keys(errors).length > 0 && (
+                  <div className="card p-4 bg-red-500/10 border border-red-500/30 rounded-lg">
+                    <h3 className="text-red-400 font-medium mb-2">
+                      {locale === 'ar' ? 'الرجاء إكمال جميع الحقول المطلوبة' : 'Please fill in all the required fields'}
+                    </h3>
+                    <div className="space-y-1 text-sm text-gray-300">
+                      <p><span className="text-gray-400">{locale === 'ar' ? 'الاسم:' : 'Name:'}</span> {formData.full_name || '—'}</p>
+                      <p><span className="text-gray-400">{locale === 'ar' ? 'الهاتف:' : 'Phone:'}</span> {formData.phone || '—'}</p>
+                      {deliveryMethod !== 'pickup' && (
+                        <p><span className="text-gray-400">{locale === 'ar' ? 'العنوان:' : 'Address:'}</span> {formData.shipping_address || '—'}</p>
+                      )}
+                      <p><span className="text-gray-400">{locale === 'ar' ? 'الدفع:' : 'Payment:'}</span> {formData.payment_method === 'credit_card' ? (locale === 'ar' ? 'بطاقة ائتمان' : 'Credit Card') : (locale === 'ar' ? 'الدفع عند الاستلام' : 'Cash on Delivery')}</p>
+                    </div>
+                  </div>
+                )}
                 {/* Location Summary */}
                 <div className="card p-6 bg-dark-800 border-dark-600">
                   <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
@@ -248,6 +299,54 @@ function CheckoutContent({ locale = 'en' }) {
                       </p>
                     </div>
                   )}
+</div>
+
+                {/* Customer Information */}
+                <div className="card p-6 bg-dark-800 border-dark-600">
+                  <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                    <MapPin className="w-5 h-5 text-brand-red" />
+                    {locale === 'ar' ? 'معلومات العميل' : 'Customer Information'}
+                  </h2>
+                  
+                  <div className="space-y-4">
+                    {/* Full Name */}
+                    <div>
+                      <label className="block text-sm text-gray-400 mb-1">
+                        {locale === 'ar' ? 'الاسم الكامل *' : 'Full Name *'}
+                      </label>
+                      <input
+                        type="text"
+                        name="full_name"
+                        value={formData.full_name}
+                        onChange={handleInputChange}
+                        placeholder={locale === 'ar' ? 'أدخل اسمك الكامل' : 'Enter your full name'}
+                        className="w-full px-4 py-3 bg-dark-700 border border-dark-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-brand-red"
+                        required
+                      />
+                      {errors.full_name && (
+                        <p className="text-red-500 text-sm mt-1">{errors.full_name}</p>
+                      )}
+                    </div>
+                    
+                    {/* Phone Number */}
+                    <div>
+                      <label className="block text-sm text-gray-400 mb-1">
+                        {locale === 'ar' ? 'رقم الهاتف *' : 'Phone Number *'}
+                      </label>
+                      <input
+                        type="tel"
+                        name="phone"
+                        value={formData.phone}
+                        onChange={handleInputChange}
+                        placeholder={locale === 'ar' ? '+970599123456' : '+970599123456'}
+                        className="w-full px-4 py-3 bg-dark-700 border border-dark-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-brand-red"
+                        required
+                      />
+                      {errors.phone && (
+                        <p className="text-red-500 text-sm mt-1">{errors.phone}</p>
+                      )}
+                    </div>
+                  </div>
                 </div>
 
                 {/* Shipping Address - Only show if not pickup */}
@@ -266,7 +365,8 @@ function CheckoutContent({ locale = 'en' }) {
                         ? 'أدخل عنوان الشحن الكامل...'
                         : 'Enter your full shipping address...'
                       }
-                      required
+                      required={deliveryMethod !== 'pickup'}
+                      error={errors.shipping_address}
                     />
                   </div>
                 )}
@@ -354,7 +454,7 @@ function CheckoutContent({ locale = 'en' }) {
                 <Button
                   type="submit"
                   fullWidth
-                  disabled={isProcessing || isLargeOrder}
+                  disabled={isProcessing || isLargeOrder || !formData.full_name || !formData.phone || !formData.payment_method}
                   className="mt-6"
                 >
                   {isProcessing ? (

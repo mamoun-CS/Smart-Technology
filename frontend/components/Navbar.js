@@ -7,7 +7,7 @@ import { ShoppingCart, User, Menu, X, Globe, LogOut, LayoutDashboard, Package, B
 import { useAuthStore } from '@/store';
 import { useCartStore } from '@/store';
 import { useNotificationStore } from '@/store';
-import { cn, getDirection, formatDate } from '@/lib';
+import { cn, getDirection, formatDate, isAdmin, isCustomer, isMerchant } from '@/lib';
 
 export default function Navbar({ locale = 'en', dict = {} }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -247,18 +247,20 @@ export default function Navbar({ locale = 'en', dict = {} }) {
               </div>
             )}
 
-            {/* Cart */}
-            <Link 
-              href={`/${locale}/cart`}
-              className="relative p-2 rounded-lg hover:bg-white/10 transition-colors"
-            >
-              <ShoppingCart className="w-5 h-5 text-gray-800" />
-              {mounted && cartItemCount > 0 && (
-                <span className="absolute -top-1 -right-1 w-5 h-5 bg-primary-600 text-gray-800 text-xs rounded-full flex items-center justify-center">
-                  {cartItemCount}
-                </span>
-              )}
-            </Link>
+            {/* Cart - Only show for customers or merchants, not for admin or trader */}
+            {mounted && isAuthenticated && (isCustomer(user) || isMerchant(user)) && (
+              <Link 
+                href={`/${locale}/cart`}
+                className="relative p-2 rounded-lg hover:bg-white/10 transition-colors"
+              >
+                <ShoppingCart className="w-5 h-5 text-gray-800" />
+                {cartItemCount > 0 && (
+                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-primary-600 text-gray-800 text-xs rounded-full flex items-center justify-center">
+                    {cartItemCount}
+                  </span>
+                )}
+              </Link>
+            )}
 
             {/* User Menu */}
             {mounted && isAuthenticated ? (
@@ -309,7 +311,7 @@ export default function Navbar({ locale = 'en', dict = {} }) {
                       {navT.orders}
                     </Link>
                     <Link 
-                      href={`/${locale}/support`}
+                      href={`/${locale}/contact`}
                       className="flex items-center gap-2 px-3 py-2 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
                     >
                       <MessageSquare className="w-4 h-4" />

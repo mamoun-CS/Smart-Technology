@@ -4,9 +4,8 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Heart, ShoppingCart, Eye, Star } from '@/components/icons';
 import { formatCurrencyLabel, cn, getProductImage, favoritesAPI } from '@/lib';
-import { useCartStore, useAuthStore } from '@/store';
+import { useAuthStore } from '@/store';
 import { useState, useEffect } from 'react';
-import { toast } from 'sonner';
 
 export default function ProductCard({ 
   product, 
@@ -15,11 +14,9 @@ export default function ProductCard({
   onAddToCart 
 }) {
   const [isHovered, setIsHovered] = useState(false);
-  const [isAdding, setIsAdding] = useState(false);
   const [imageError, setImageError] = useState(false);
   const [isFavorite, setIsFavorite] = useState(false);
   const [isTogglingFavorite, setIsTogglingFavorite] = useState(false);
-  const { addItem } = useCartStore();
   const { isAuthenticated } = useAuthStore();
   
   const productName = locale === 'ar' ? product.name_ar : product.name_en;
@@ -45,16 +42,8 @@ export default function ProductCard({
     
     if (!isInStock) return;
     
-    setIsAdding(true);
-    try {
-      await addItem(product.id, 1);
-      toast.success(dict?.common?.addedToCart || 'Added to cart');
-      onAddToCart?.(product);
-    } catch (error) {
-      toast.error(dict?.errors?.networkError || 'Failed to add to cart');
-    } finally {
-      setIsAdding(false);
-    }
+    // Just trigger the callback - parent component handles addItem
+    onAddToCart?.(product);
   };
 
   const handleImageError = () => {
@@ -181,7 +170,7 @@ export default function ProductCard({
           )}>
             <button
               onClick={handleAddToCart}
-              disabled={!isInStock || isAdding}
+              disabled={!isInStock}
               className={cn(
                 'w-full py-2.5 px-4 rounded-lg flex items-center justify-center gap-2 transition-all',
                 isInStock 
@@ -191,10 +180,7 @@ export default function ProductCard({
             >
               <ShoppingCart className="w-4 h-4" />
               <span className="text-sm font-medium">
-                {isAdding 
-                  ? dict?.common?.loading || 'Adding...' 
-                  : dict?.products?.addToCart || 'Add to Cart'
-                }
+                {dict?.products?.addToCart || 'Add to Cart'}
               </span>
             </button>
           </div>

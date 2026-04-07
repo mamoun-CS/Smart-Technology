@@ -127,59 +127,59 @@ ON CONFLICT (config_key) DO NOTHING;
 -- ============================================
 
 WITH user_data AS (
-  SELECT id, email FROM users
+  SELECT id, email, name, phone FROM users
 ),
 order1 AS (
-  INSERT INTO orders (user_id, total_price, status, shipping_address, payment_method, created_at, updated_at)
-  SELECT id, 1299.99, 'delivered', 'Ramallah, Al-Masyoun, Building 12, Apt 3', 'credit_card', '2024-01-15 10:30:00', '2024-01-18 14:20:00'
+  INSERT INTO orders (user_id, full_name, phone, total_price, status, shipping_address, payment_method, city, created_at, updated_at)
+  SELECT id, name, phone, 1299.99, 'delivered', 'Ramallah, Al-Masyoun, Building 12, Apt 3', 'credit_card', 'Ramallah', '2024-01-15 10:30:00', '2024-01-18 14:20:00'
   FROM user_data WHERE email = 'ahmed@example.com'
   RETURNING id
 ),
 order2 AS (
-  INSERT INTO orders (user_id, total_price, status, shipping_address, payment_method, created_at, updated_at)
-  SELECT id, 1199.99, 'shipped', 'Nablus, Rafidia, Main Street, Building 5', 'paypal', '2024-01-20 09:15:00', '2024-01-22 16:45:00'
+  INSERT INTO orders (user_id, full_name, phone, total_price, status, shipping_address, payment_method, city, created_at, updated_at)
+  SELECT id, name, phone, 1199.99, 'shipped', 'Nablus, Rafidia, Main Street, Building 5', 'paypal', 'Nablus', '2024-01-20 09:15:00', '2024-01-22 16:45:00'
   FROM user_data WHERE email = 'layla@example.com'
   RETURNING id
 ),
 order3 AS (
-  INSERT INTO orders (user_id, total_price, status, shipping_address, payment_method, created_at, updated_at)
-  SELECT id, 349.99, 'pending', 'Hebron, City Center, Al-Shuhada Street', 'cod', '2024-01-25 14:20:00', '2024-01-25 14:20:00'
+  INSERT INTO orders (user_id, full_name, phone, total_price, status, shipping_address, payment_method, city, created_at, updated_at)
+  SELECT id, name, phone, 349.99, 'pending', 'Hebron, City Center, Al-Shuhada Street', 'cod', 'Hebron', '2024-01-25 14:20:00', '2024-01-25 14:20:00'
   FROM user_data WHERE email = 'omar@example.com'
   RETURNING id
 ),
 order4 AS (
-  INSERT INTO orders (user_id, total_price, status, shipping_address, payment_method, created_at, updated_at)
-  SELECT id, 2799.98, 'processing', 'Jerusalem, Beit Hanina, Al-Quds Street', 'credit_card', '2024-01-28 11:45:00', '2024-01-29 09:30:00'
+  INSERT INTO orders (user_id, full_name, phone, total_price, status, shipping_address, payment_method, city, created_at, updated_at)
+  SELECT id, name, phone, 2799.98, 'processing', 'Jerusalem, Beit Hanina, Al-Quds Street', 'credit_card', 'Jerusalem', '2024-01-28 11:45:00', '2024-01-29 09:30:00'
   FROM user_data WHERE email = 'sara@example.com'
   RETURNING id
 ),
 order5 AS (
-  INSERT INTO orders (user_id, total_price, status, shipping_address, payment_method, created_at, updated_at)
-  SELECT id, 899.99, 'delivered', 'Gaza, Al-Rimal, Omar Al-Mukhtar Street', 'paypal', '2024-02-01 16:00:00', '2024-02-05 11:20:00'
+  INSERT INTO orders (user_id, full_name, phone, total_price, status, shipping_address, payment_method, city, created_at, updated_at)
+  SELECT id, name, phone, 899.99, 'delivered', 'Gaza, Al-Rimal, Omar Al-Mukhtar Street', 'paypal', 'Gaza', '2024-02-01 16:00:00', '2024-02-05 11:20:00'
   FROM user_data WHERE email = 'nadia@example.com'
   RETURNING id
 ),
 order6 AS (
-  INSERT INTO orders (user_id, total_price, status, shipping_address, payment_method, created_at, updated_at)
-  SELECT id, 399.99, 'cancelled', 'Ramallah, Al-Tireh, Main Road', 'credit_card', '2024-02-05 13:30:00', '2024-02-06 10:15:00'
+  INSERT INTO orders (user_id, full_name, phone, total_price, status, shipping_address, payment_method, city, created_at, updated_at)
+  SELECT id, name, phone, 399.99, 'cancelled', 'Ramallah, Al-Tireh, Main Road', 'credit_card', 'Ramallah', '2024-02-05 13:30:00', '2024-02-06 10:15:00'
   FROM user_data WHERE email = 'youssef@example.com'
   RETURNING id
 ),
 order7 AS (
-  INSERT INTO orders (user_id, total_price, status, shipping_address, payment_method, created_at, updated_at)
-  SELECT id, 1499.99, 'delivered', 'Ramallah, Al-Masyoun, Building 12, Apt 3', 'credit_card', '2024-02-10 08:45:00', '2024-02-13 12:00:00'
+  INSERT INTO orders (user_id, full_name, phone, total_price, status, shipping_address, payment_method, city, created_at, updated_at)
+  SELECT id, name, phone, 1499.99, 'delivered', 'Ramallah, Al-Masyoun, Building 12, Apt 3', 'credit_card', 'Ramallah', '2024-02-10 08:45:00', '2024-02-13 12:00:00'
   FROM user_data WHERE email = 'ahmed@example.com'
   RETURNING id
 ),
 order8 AS (
-  INSERT INTO orders (user_id, total_price, status, shipping_address, payment_method, created_at, updated_at)
-  SELECT id, 2199.99, 'shipped', 'Nablus, Rafidia, Main Street, Building 5', 'paypal', '2024-02-12 10:20:00', '2024-02-14 15:30:00'
+  INSERT INTO orders (user_id, full_name, phone, total_price, status, shipping_address, payment_method, city, created_at, updated_at)
+  SELECT id, name, phone, 2199.99, 'shipped', 'Nablus, Rafidia, Main Street, Building 5', 'paypal', 'Nablus', '2024-02-12 10:20:00', '2024-02-14 15:30:00'
   FROM user_data WHERE email = 'layla@example.com'
   RETURNING id
 ),
 order9 AS (
-  INSERT INTO orders (user_id, total_price, status, shipping_address, payment_method, created_at, updated_at)
-  SELECT id, 249.99, 'pending', 'Jerusalem, Beit Hanina, Al-Quds Street', 'credit_card', '2024-02-15 09:00:00', '2024-02-15 09:00:00'
+  INSERT INTO orders (user_id, full_name, phone, total_price, status, shipping_address, payment_method, city, created_at, updated_at)
+  SELECT id, name, phone, 249.99, 'pending', 'Jerusalem, Beit Hanina, Al-Quds Street', 'credit_card', 'Jerusalem', '2024-02-15 09:00:00', '2024-02-15 09:00:00'
   FROM user_data WHERE email = 'sara@example.com'
   RETURNING id
 )

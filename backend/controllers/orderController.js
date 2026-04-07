@@ -1,5 +1,6 @@
 
 const orderModel = require('../models/orderModel');
+const cartModel = require('../models/cartModel');
 const emailService = require('../services/emailService');
 const userModel = require('../models/userModel');
 
@@ -7,7 +8,33 @@ const orderController = {
   // Create order
   async createOrder(req, res) {
     try {
-      const { shipping_address, payment_method, city, delivery_method } = req.body;
+      const { full_name, phone, shipping_address, payment_method, city, delivery_method } = req.body;
+
+      // Validate phone number format (international and local formats)
+      const phoneRegex = /^[\+]?[(]?[0-9]{1,3}[)]?[-\s\.]?[(]?[0-9]{1,4}[)]?[-\s\.]?[0-9]{1,4}[-\s\.]?[0-9]{1,9}$/;
+      if (!phone || !phoneRegex.test(phone)) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Valid phone number is required (e.g., +970599123456 or 0599123456)' 
+        });
+      }
+
+      // Validate full name
+      if (!full_name || full_name.trim().length < 2) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Full name is required and must be at least 2 characters' 
+        });
+      }
+
+      // Verify cart is not empty
+      const { items } = await cartModel.getCartWithItems(req.user.id, 'customer');
+      if (!items || items.length === 0) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Cannot create order with empty cart' 
+        });
+      }
 
       // Validate delivery method if provided
       if (delivery_method && !['shipping', 'pickup'].includes(delivery_method)) {
@@ -17,15 +44,28 @@ const orderController = {
         });
       }
 
+      // Check if user's phone exists - if not, use the provided phone
+      const user = await userModel.getProfile(req.user.id);
+      if (!user.phone) {
+        // Update user profile with phone if not exists
+        await userModel.updateProfile(req.user.id, { name: full_name || user.name, phone: phone });
+      } else if (user.phone !== phone) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Phone number must match your profile phone number' 
+        });
+      }
+
       const order = await orderModel.createOrder(req.user.id, {
+        full_name,
+        phone,
         shipping_address,
         payment_method,
         city: city || null,
         delivery_method: delivery_method || null
       });
 
-      // Send confirmation email
-      const user = await userModel.findById(req.user.id);
+      // Send confirmation email - user is already fetched above
       
       // Customize email based on order status
       try {

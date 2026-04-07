@@ -22,7 +22,8 @@ export function formatPrice(price, locale = 'en') {
 
 export const formatCurrencyLabel = (amount, locale) => {
   const currencyLabel = locale === 'ar' ? 'شيكل' : 'ILS';
-  return `${amount} ${currencyLabel}`;
+  const roundedAmount = typeof amount === 'number' ? Math.round(amount * 100) / 100 : amount;
+  return `${roundedAmount} ${currencyLabel}`;
 };
 
 export function formatDate(date, locale = 'en') {
@@ -105,4 +106,66 @@ export function hasValidImage(images) {
     return false;
   }
   return images.length > 0 && !!images[0];
+}
+
+// Role checking utilities
+export function isAdmin(user) {
+  return user?.role === 'admin';
+}
+
+export function isCustomer(user) {
+  return user?.role === 'customer' || !user?.role;
+}
+
+export function isTrader(user) {
+  return user?.role === 'trader';
+}
+
+export function isMerchant(user) {
+  return user?.role === 'merchant';
+}
+
+export function canAccessCart(user) {
+  return isCustomer(user) || isMerchant(user);
+}
+
+export function canAccessCheckout(user) {
+  return isCustomer(user) || isMerchant(user);
+}
+
+// Phone number validation (supports local and international formats)
+export function isValidPhoneNumber(phone) {
+  if (!phone || typeof phone !== 'string') return false;
+  const phoneRegex = /^[\+]?[(]?[0-9]{1,3}[)]?[-\s\.]?[(]?[0-9]{1,4}[)]?[-\s\.]?[0-9]{1,4}[-\s\.]?[0-9]{1,9}$/;
+  return phoneRegex.test(phone.trim());
+}
+
+// Validate checkout form
+export function validateCheckoutForm(formData, locale = 'en', deliveryMethod = 'shipping') {
+  const errors = {};
+  
+  if (!formData.full_name || formData.full_name.trim().length < 2) {
+    errors.full_name = locale === 'ar' ? 'الاسم الكامل مطلوب' : 'Full name is required';
+  }
+  
+  if (!formData.phone || formData.phone.trim().length === 0) {
+    errors.phone = locale === 'ar' ? 'رقم الهاتف مطلوب' : 'Phone number is required';
+  } else if (!isValidPhoneNumber(formData.phone)) {
+    errors.phone = locale === 'ar' 
+      ? 'رقم هاتف غير صالح (مثال: +970599123456 أو 0599123456)' 
+      : 'Invalid phone number (e.g., +970599123456 or 0599123456)';
+  }
+  
+  if (deliveryMethod !== 'pickup' && (!formData.shipping_address || formData.shipping_address.trim().length === 0)) {
+    errors.shipping_address = locale === 'ar' ? 'عنوان الشحن مطلوب' : 'Shipping address is required';
+  }
+  
+  if (!formData.payment_method) {
+    errors.payment_method = locale === 'ar' ? 'طريقة الدفع مطلوبة' : 'Payment method is required';
+  }
+  
+  return {
+    isValid: Object.keys(errors).length === 0,
+    errors
+  };
 }

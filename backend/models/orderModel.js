@@ -45,7 +45,7 @@ const orderModel = {
 
   // Create order from cart
   async createOrder(userId, orderData) {
-    const { shipping_address, payment_method, city, delivery_method } = orderData;
+    const { full_name, phone, shipping_address, payment_method, city, delivery_method } = orderData;
     const client = await pool.connect();
     
     try {
@@ -103,10 +103,12 @@ const orderModel = {
         orderStatus = 'under_review';
       }
       
-      // Create order
+      // Create order - include full_name and phone
       const orderQuery = `
         INSERT INTO orders (
           user_id, 
+          full_name,
+          phone,
           total_price, 
           status, 
           shipping_address, 
@@ -116,11 +118,13 @@ const orderModel = {
           shipping_cost,
           is_large_order
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
         RETURNING *
       `;
       const orderResult = await client.query(orderQuery, [
         userId, 
+        full_name,
+        phone,
         totalPrice, 
         orderStatus, 
         shipping_address, 

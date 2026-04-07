@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuthStore } from '@/store';
+import { useAuthStore, useCartStore } from '@/store';
 import { cartAPI } from '@/lib';
 import { getDictionary } from '@/i18n';
-import { formatCurrencyLabel, cn, getProductImage } from '@/lib';
+import { formatCurrencyLabel, cn, getProductImage, isAdmin, canAccessCart } from '@/lib';
 import { toast } from 'sonner';
 import { Navbar } from '@/components';
 import { Footer } from '@/components';
@@ -19,10 +19,9 @@ export default function CartPage({ params: { locale = 'en' } }) {
   const dict = getDictionary(locale);
   const t = dict?.common || {};
   const cartT = dict?.cart || {};
-  
-  // Use _hasHydrated from auth store to wait for localStorage rehydration
   const { user, isAuthenticated, _hasHydrated } = useAuthStore();
-  const [cart, setCart] = useState(null);
+  const { items, total, isLoading: cartLoading, fetchCart, updateItem, removeItem, clearCart } = useCartStore();
+  
   const [isLoading, setIsLoading] = useState(true);
   const [updatingItemId, setUpdatingItemId] = useState(null);
   
@@ -31,28 +30,38 @@ export default function CartPage({ params: { locale = 'en' } }) {
   const [selectedCity, setSelectedCity] = useState('');
   const [deliveryMethod, setDeliveryMethod] = useState('');
   const [isLoadingAreas, setIsLoadingAreas] = useState(false);
+  const [initialized, setInitialized] = useState(false);
+
+  // Check if user can see wholesale prices (admin or merchant)
+  const canSeeWholesalePrice = user?.role === 'admin' || user?.role === 'merchant';
 
   useEffect(() => {
+    // Skip first render - just set initialized
+    if (!initialized) {
+      setInitialized(true);
+      setIsLoading(false);
+      return;
+    }
+    
+    // Redirect admin users away from cart
+    if (isAuthenticated && isAdmin(user)) {
+      router.push(`/${locale}/admin`);
+      return;
+    }
+    
+    // Only allow customers to access cart
+    if (isAuthenticated && !canAccessCart(user)) {
+      router.push(`/${locale}/admin`);
+      return;
+    }
+    
     if (isAuthenticated) {
       fetchCart();
       fetchShippingAreas();
-    } else {
-      setIsLoading(false);
     }
-  }, [isAuthenticated]);
-
-  const fetchCart = async () => {
-    try {
-      setIsLoading(true);
-      const response = await cartAPI.getCart();
-      setCart(response.data);
-    } catch (error) {
-      console.error('Error fetching cart:', error);
-      toast.error(locale === 'ar' ? 'فشل تحميل السلة' : 'Failed to load cart');
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    
+    setIsLoading(false);
+  }, [isAuthenticated, user, initialized]);
 
   const fetchShippingAreas = async () => {
     try {
@@ -74,8 +83,7 @@ export default function CartPage({ params: { locale = 'en' } }) {
     
     try {
       setUpdatingItemId(productId);
-      await cartAPI.updateItem(productId, { quantity: newQuantity });
-      await fetchCart();
+      await updateItem(productId, newQuantity);
       toast.success(locale === 'ar' ? 'تم تحديث الكمية' : 'Quantity updated');
     } catch (error) {
       console.error('Error updating quantity:', error);
@@ -88,12 +96,11 @@ export default function CartPage({ params: { locale = 'en' } }) {
   const handleRemoveItem = async (productId) => {
     try {
       setUpdatingItemId(productId);
-      await cartAPI.removeItem(productId);
-      await fetchCart();
+      await removeItem(productId);
       toast.success(locale === 'ar' ? 'تمت الإزالة من السلة' : 'Item removed from cart');
     } catch (error) {
       console.error('Error removing item:', error);
-      toast.error(locale === 'ar' ? 'فشل إزالة المنتج' : 'Failed to remove item');
+      toast.error(locale === 'ar' ? 'فشل إزالة المنتج' : 'Failed to remove product');
     } finally {
       setUpdatingItemId(null);
     }
@@ -105,7 +112,19 @@ export default function CartPage({ params: { locale = 'en' } }) {
       return;
     }
     
-    // Build checkout URL with optional city and delivery method
+    // Validate delivery method selection
+    if (!deliveryMethod) {
+      toast.error(locale === 'ar' ? 'الرجاء اختيار طريقة التوصيل' : 'Please select delivery method');
+      return;
+    }
+    
+    // If shipping selected, require city selection
+    if (deliveryMethod === 'shipping' && !selectedCity) {
+      toast.error(locale === 'ar' ? 'الرجاء اختيار المدينة للشحن' : 'Please select a city for shipping');
+      return;
+    }
+    
+    // Build checkout URL with city and delivery method
     let checkoutUrl = `/${locale}/checkout`;
     const params = new URLSearchParams();
     
@@ -123,24 +142,36 @@ export default function CartPage({ params: { locale = 'en' } }) {
     router.push(checkoutUrl);
   };
 
-  // Check if user can see wholesale price
-  const canSeeWholesalePrice = user?.role === 'admin' || user?.role === 'merchant';
+  // Check if user is customer (not admin or merchant)
   const isCustomer = user?.role === 'customer' || !user?.role;
+  
+  // Determine if checkout button should be disabled
+  const canProceedToCheckout = !deliveryMethod || (deliveryMethod === 'shipping' && !selectedCity);
 
   // Calculate totals
   const calculateSubtotal = () => {
-    if (!cart?.items) return 0;
-    return cart.items.reduce((total, item) => {
+    if (!items) return 0;
+    return items.reduce((sum, item) => {
       const price = canSeeWholesalePrice && item.wholesale_price && item.quantity >= (item.min_order_quantity || 1)
         ? item.wholesale_price
         : (item.unit_price || item.price);
-      return total + (price * item.quantity);
+      return sum + (price * item.quantity);
+    }, 0);
+  };
+
+  const calculateTotal = () => {
+    if (!items || !canSeeWholesalePrice) return total || calculateSubtotal();
+    return items.reduce((sum, item) => {
+      const price = item.wholesale_price && item.quantity >= (item.min_order_quantity || 1)
+        ? item.wholesale_price
+        : (item.unit_price || item.price);
+      return sum + (price * item.quantity);
     }, 0);
   };
 
   const calculateSavings = () => {
-    if (!cart?.items || !canSeeWholesalePrice) return 0;
-    return cart.items.reduce((total, item) => {
+    if (!items || !canSeeWholesalePrice) return 0;
+    return items.reduce((total, item) => {
       if (item.wholesale_price && item.quantity >= (item.min_order_quantity || 1)) {
         const retailTotal = (item.unit_price || item.price) * item.quantity;
         const wholesaleTotal = item.wholesale_price * item.quantity;
@@ -153,21 +184,8 @@ export default function CartPage({ params: { locale = 'en' } }) {
   const subtotal = calculateSubtotal();
   const savings = calculateSavings();
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-        <Navbar locale={locale} dict={dict} />
-        <div className="pt-24 pb-12">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <Loading />
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Show loading until hydrated to prevent hydration mismatch
-  if (!_hasHydrated) {
+  // Show loading until hydrated or while fetching cart
+  if (!_hasHydrated || isLoading || cartLoading) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
         <Navbar locale={locale} dict={dict} />
@@ -178,6 +196,7 @@ export default function CartPage({ params: { locale = 'en' } }) {
     );
   }
 
+  // Show login prompt if not authenticated
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -203,7 +222,7 @@ export default function CartPage({ params: { locale = 'en' } }) {
     );
   }
 
-  if (!cart?.items || cart.items.length === 0) {
+  if (!items || items.length === 0) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
         <Navbar locale={locale} dict={dict} />
@@ -241,7 +260,7 @@ export default function CartPage({ params: { locale = 'en' } }) {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Cart Items */}
             <div className="lg:col-span-2 space-y-4">
-              {cart.items.map((item) => {
+              {items.map((item) => {
                 const itemPrice = canSeeWholesalePrice && item.wholesale_price && item.quantity >= (item.min_order_quantity || 1)
                   ? item.wholesale_price
                   : (item.unit_price || item.price);
@@ -568,6 +587,7 @@ export default function CartPage({ params: { locale = 'en' } }) {
                   {/* Checkout Button */}
                   <Button
                     onClick={handleCheckout}
+                    disabled={!deliveryMethod || (deliveryMethod === 'shipping' && !selectedCity)}
                     className="w-full mt-6"
                     size="lg"
                   >

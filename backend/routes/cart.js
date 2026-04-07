@@ -3,9 +3,11 @@ const router = express.Router();
 const { body, query } = require('express-validator');
 const cartController = require('../controllers/cartController');
 const authMiddleware = require('../middleware/auth');
+const { requireRole } = require('../middleware/rbac');
 
-// All cart routes require authentication
+// All cart routes require authentication and customer/merchant role only (block admin and trader)
 router.use(authMiddleware);
+router.use(requireRole('customer', 'merchant'));
 
 // Get cart
 router.get('/', cartController.getCart);

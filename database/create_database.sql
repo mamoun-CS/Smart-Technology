@@ -73,6 +73,8 @@ CREATE TABLE product_pricing (
 CREATE TABLE orders (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+    full_name VARCHAR(255) NOT NULL DEFAULT '',
+    phone VARCHAR(50) NOT NULL DEFAULT '',
     total_price DECIMAL(10, 2) NOT NULL,
     status VARCHAR(50) DEFAULT 'pending',
     shipping_address TEXT,

@@ -3,3 +3,6 @@ export { default as api, authAPI, profileAPI, productsAPI, cartAPI, ordersAPI, r
 
 // Utils exports
 export { cn, formatPrice, formatCurrencyLabel, formatDate, debounce, truncate, getStatusColor, isArabicLocale, getDirection, getProductImage, hasValidImage } from './utils';
+
+// Role and validation exports
+export { isAdmin, isCustomer, isTrader, isMerchant, canAccessCart, canAccessCheckout, isValidPhoneNumber, validateCheckoutForm } from './utils';

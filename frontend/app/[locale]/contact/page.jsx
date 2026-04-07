@@ -1,13 +1,19 @@
+
 'use client';
 
-import { useTranslation } from 'react-i18next';
 import { Navbar } from '@/components';
 import { Footer } from '@/components';
 import { Mail, Phone, MapPin, Clock, Facebook } from '@/components/icons';
+import { useEffect, useState } from 'react';
+import { usePathname } from 'next/navigation';
 
 export default function ContactPage() {
-  const { t, i18n } = useTranslation();
-  const isArabic = i18n?.language === 'ar';
+  const pathname = usePathname();
+  const [isArabic, setIsArabic] = useState(false);
+
+  useEffect(() => {
+    setIsArabic(pathname?.startsWith('/ar'));
+  }, [pathname]);
 
   const translations = {
     en: {
@@ -134,7 +140,7 @@ export default function ContactPage() {
                   </div>
                   <div>
                     <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                      WhatsApp
+                      {isArabic ? 'واتساب' : 'WhatsApp'}
                     </h3>
                     <a 
                       href="https://wa.me/972568356505" 
@@ -153,7 +159,7 @@ export default function ContactPage() {
                   </div>
                   <div>
                     <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                      Facebook
+                      {isArabic ? 'فيسبوك' : 'Facebook'}
                     </h3>
                     <a 
                       href="https://www.facebook.com/share/1CbctLX9dA/?mibextid=wwXIfr" 
