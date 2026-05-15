@@ -1,6 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  transpilePackages: ['axios'],
   images: {
     domains: process.env.NEXT_PUBLIC_IMAGE_DOMAINS?.split(',') || ['localhost', 'res.cloudinary.com', 'images.unsplash.com'],
     unoptimized: true,

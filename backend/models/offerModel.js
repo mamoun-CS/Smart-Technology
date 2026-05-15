@@ -5,17 +5,19 @@ const offerModel = {
   async create(offerData) {
     const { 
       code, discount_type, discount_value, target_role,
-      valid_from, valid_until, usage_limit, created_by
+      valid_from, valid_until, usage_limit, created_by,
+      is_active, min_order_amount, description
     } = offerData;
     
     const query = `
       INSERT INTO offers (code, discount_type, discount_value, target_role,
-        valid_from, valid_until, usage_limit, created_by)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+        valid_from, valid_until, usage_limit, created_by, is_active, min_order_amount, description)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
       RETURNING *
     `;
     const values = [code.toUpperCase(), discount_type, discount_value, target_role,
-      valid_from, valid_until, usage_limit, created_by];
+      valid_from, valid_until, usage_limit, created_by, 
+      is_active !== false, min_order_amount, description];
     
     const result = await pool.query(query, values);
     return result.rows[0];
@@ -35,8 +37,8 @@ const offerModel = {
     const values = [];
     let paramIndex = 1;
 
-    if (active === true) {
-      query += ` AND o.valid_from <= CURRENT_TIMESTAMP AND o.valid_until >= CURRENT_TIMESTAMP AND (o.usage_limit IS NULL OR o.used_count < o.usage_limit)`;
+    if (active === true || active === 'true') {
+      query += ` AND o.is_active = true AND o.valid_from <= CURRENT_TIMESTAMP AND o.valid_until >= CURRENT_TIMESTAMP AND (o.usage_limit IS NULL OR o.used_count < o.usage_limit)`;
     }
 
     if (target_role) {
@@ -57,6 +59,7 @@ const offerModel = {
     const query = `
       SELECT * FROM offers 
       WHERE code = $1 
+        AND is_active = true
         AND valid_from <= CURRENT_TIMESTAMP 
         AND valid_until >= CURRENT_TIMESTAMP
         AND (usage_limit IS NULL OR used_count < usage_limit)
@@ -104,24 +107,66 @@ const offerModel = {
   async update(id, offerData) {
     const { 
       code, discount_type, discount_value, target_role,
-      valid_from, valid_until, usage_limit, active
+      valid_from, valid_until, usage_limit, is_active,
+      min_order_amount, description
     } = offerData;
     
+    const updates = [];
+    const values = [];
+    let paramIndex = 1;
+
+    if (code !== undefined) {
+      updates.push(`code = $${paramIndex++}`);
+      values.push(code.toUpperCase());
+    }
+    if (discount_type !== undefined) {
+      updates.push(`discount_type = $${paramIndex++}`);
+      values.push(discount_type);
+    }
+    if (discount_value !== undefined) {
+      updates.push(`discount_value = $${paramIndex++}`);
+      values.push(discount_value);
+    }
+    if (target_role !== undefined) {
+      updates.push(`target_role = $${paramIndex++}`);
+      values.push(target_role);
+    }
+    if (valid_from !== undefined && valid_from !== '') {
+      updates.push(`valid_from = $${paramIndex++}`);
+      values.push(valid_from);
+    }
+    if (valid_until !== undefined && valid_until !== '') {
+      updates.push(`valid_until = $${paramIndex++}`);
+      values.push(valid_until);
+    }
+    if (usage_limit !== undefined) {
+      updates.push(`usage_limit = $${paramIndex++}`);
+      values.push(usage_limit);
+    }
+    if (is_active !== undefined) {
+      updates.push(`is_active = $${paramIndex++}`);
+      values.push(is_active);
+    }
+    if (min_order_amount !== undefined) {
+      updates.push(`min_order_amount = $${paramIndex++}`);
+      values.push(min_order_amount);
+    }
+    if (description !== undefined) {
+      updates.push(`description = $${paramIndex++}`);
+      values.push(description);
+    }
+
+    if (updates.length === 0) {
+      return null;
+    }
+
     const query = `
       UPDATE offers 
-      SET code = COALESCE($1, code),
-          discount_type = COALESCE($2, discount_type),
-          discount_value = COALESCE($3, discount_value),
-          target_role = COALESCE($4, target_role),
-          valid_from = COALESCE($5, valid_from),
-          valid_until = COALESCE($6, valid_until),
-          usage_limit = COALESCE($7, usage_limit),
-          active = COALESCE($8, active)
-      WHERE id = $9
+      SET ${updates.join(', ')}
+      WHERE id = $${paramIndex}
       RETURNING *
     `;
-    const values = [code?.toUpperCase(), discount_type, discount_value, target_role,
-      valid_from, valid_until, usage_limit, active, id];
+    values.push(id);
     
     const result = await pool.query(query, values);
     return result.rows[0];

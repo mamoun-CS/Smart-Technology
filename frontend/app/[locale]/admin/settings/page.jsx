@@ -13,17 +13,27 @@ import {
   Check,
   AlertCircle
 } from '@/components/icons';
-import { useAuthStore } from '@/store';
+import { useAuthStore, useThemeStore } from '@/store';
 import { toast } from 'sonner';
+import { profileAPI } from '@/lib/api';
 
 export default function AdminSettingsPage({ params: { locale = 'en' } }) {
   const router = useRouter();
   const { user, isAuthenticated } = useAuthStore();
+  const theme = useThemeStore((state) => state.theme);
+  const language = useThemeStore((state) => state.language);
+  const compactMode = useThemeStore((state) => state.compactMode);
+  const showImages = useThemeStore((state) => state.showImages);
+  const setTheme = useThemeStore((state) => state.setTheme);
+  const setLanguage = useThemeStore((state) => state.setLanguage);
+  const setCompactMode = useThemeStore((state) => state.setCompactMode);
+  const setShowImages = useThemeStore((state) => state.setShowImages);
+  const initializeTheme = useThemeStore((state) => state.initializeTheme);
+  
   const [activeTab, setActiveTab] = useState('profile');
   const [isLoading, setIsLoading] = useState(false);
   const [saved, setSaved] = useState(false);
 
-  // Profile settings
   const [profileData, setProfileData] = useState({
     name: '',
     email: '',
@@ -33,7 +43,6 @@ export default function AdminSettingsPage({ params: { locale = 'en' } }) {
     confirmPassword: ''
   });
 
-  // Notification settings
   const [notificationSettings, setNotificationSettings] = useState({
     emailNotifications: true,
     orderAlerts: true,
@@ -42,15 +51,13 @@ export default function AdminSettingsPage({ params: { locale = 'en' } }) {
     marketingEmails: false
   });
 
-  // Appearance settings
   const [appearanceSettings, setAppearanceSettings] = useState({
-    theme: 'dark',
-    language: locale,
-    compactMode: false,
-    showImages: true
+    theme: theme,
+    language: language,
+    compactMode: compactMode,
+    showImages: showImages
   });
 
-  // Security settings
   const [securitySettings, setSecuritySettings] = useState({
     twoFactorAuth: false,
     sessionTimeout: '30',
@@ -58,12 +65,15 @@ export default function AdminSettingsPage({ params: { locale = 'en' } }) {
   });
 
   useEffect(() => {
+    initializeTheme();
+  }, []);
+
+  useEffect(() => {
     if (!isAuthenticated || user?.role !== 'admin') {
       router.push(`/${locale}/login`);
       return;
     }
     
-    // Load user data
     if (user) {
       setProfileData(prev => ({
         ...prev,
@@ -74,16 +84,46 @@ export default function AdminSettingsPage({ params: { locale = 'en' } }) {
     }
   }, [isAuthenticated, user, router, locale]);
 
+  useEffect(() => {
+    setAppearanceSettings({
+      theme: theme,
+      language: language,
+      compactMode: compactMode,
+      showImages: showImages
+    });
+  }, [theme, language, compactMode, showImages]);
+
   const handleSaveProfile = async () => {
     setIsLoading(true);
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await profileAPI.updateProfile({
+        name: profileData.name,
+        phone: profileData.phone
+      });
+
+      if (profileData.newPassword && profileData.currentPassword) {
+        if (profileData.newPassword !== profileData.confirmPassword) {
+          toast.error(locale === 'ar' ? 'كلمات المرور غير متطابقة' : 'Passwords do not match');
+          setIsLoading(false);
+          return;
+        }
+        await profileAPI.updatePassword({
+          currentPassword: profileData.currentPassword,
+          newPassword: profileData.newPassword
+        });
+      }
+
       toast.success(locale === 'ar' ? 'تم حفظ الملف الشخصي' : 'Profile saved successfully');
       setSaved(true);
+      setProfileData(prev => ({
+        ...prev,
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: ''
+      }));
       setTimeout(() => setSaved(false), 2000);
     } catch (error) {
-      toast.error(locale === 'ar' ? 'فشل حفظ الملف الشخصي' : 'Failed to save profile');
+      toast.error(error.response?.data?.message || (locale === 'ar' ? 'فشل حفظ الملف الشخصي' : 'Failed to save profile'));
     } finally {
       setIsLoading(false);
     }
@@ -92,7 +132,14 @@ export default function AdminSettingsPage({ params: { locale = 'en' } }) {
   const handleSaveNotifications = async () => {
     setIsLoading(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      const savedNotifications = JSON.parse(localStorage.getItem('notificationSettings') || '{}');
+      localStorage.setItem('notificationSettings', JSON.stringify({
+        ...savedNotifications,
+        ...notificationSettings
+      }));
+      
       toast.success(locale === 'ar' ? 'تم حفظ إعدادات الإشعارات' : 'Notification settings saved');
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
@@ -106,7 +153,13 @@ export default function AdminSettingsPage({ params: { locale = 'en' } }) {
   const handleSaveAppearance = async () => {
     setIsLoading(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      setTheme(appearanceSettings.theme);
+      setLanguage(appearanceSettings.language);
+      setCompactMode(appearanceSettings.compactMode);
+      setShowImages(appearanceSettings.showImages);
+      
+      localStorage.setItem('appearanceSettings', JSON.stringify(appearanceSettings));
+      
       toast.success(locale === 'ar' ? 'تم حفظ إعدادات المظهر' : 'Appearance settings saved');
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
@@ -120,7 +173,14 @@ export default function AdminSettingsPage({ params: { locale = 'en' } }) {
   const handleSaveSecurity = async () => {
     setIsLoading(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      const savedSecurity = JSON.parse(localStorage.getItem('securitySettings') || '{}');
+      localStorage.setItem('securitySettings', JSON.stringify({
+        ...savedSecurity,
+        ...securitySettings
+      }));
+      
       toast.success(locale === 'ar' ? 'تم حفظ إعدادات الأمان' : 'Security settings saved');
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
@@ -140,7 +200,6 @@ export default function AdminSettingsPage({ params: { locale = 'en' } }) {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-white flex items-center gap-2">
@@ -159,7 +218,6 @@ export default function AdminSettingsPage({ params: { locale = 'en' } }) {
         )}
       </div>
 
-      {/* Tabs */}
       <div className="flex gap-2 border-b border-gray-700 pb-2">
         {tabs.map((tab) => {
           const Icon = tab.icon;
@@ -180,9 +238,7 @@ export default function AdminSettingsPage({ params: { locale = 'en' } }) {
         })}
       </div>
 
-      {/* Tab Content */}
       <div className="bg-gray-800 rounded-xl p-6">
-        {/* Profile Tab */}
         {activeTab === 'profile' && (
           <div className="space-y-6">
             <div>
@@ -208,8 +264,8 @@ export default function AdminSettingsPage({ params: { locale = 'en' } }) {
                   <input
                     type="email"
                     value={profileData.email}
-                    onChange={(e) => setProfileData({ ...profileData, email: e.target.value })}
-                    className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-brand-red"
+                    disabled
+                    className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-gray-400 focus:outline-none cursor-not-allowed"
                   />
                 </div>
                 <div>
@@ -283,7 +339,6 @@ export default function AdminSettingsPage({ params: { locale = 'en' } }) {
           </div>
         )}
 
-        {/* Notifications Tab */}
         {activeTab === 'notifications' && (
           <div className="space-y-6">
             <h3 className="text-lg font-semibold text-white mb-4">
@@ -333,7 +388,6 @@ export default function AdminSettingsPage({ params: { locale = 'en' } }) {
           </div>
         )}
 
-        {/* Appearance Tab */}
         {activeTab === 'appearance' && (
           <div className="space-y-6">
             <h3 className="text-lg font-semibold text-white mb-4">
@@ -344,18 +398,18 @@ export default function AdminSettingsPage({ params: { locale = 'en' } }) {
               <div className="p-4 bg-gray-700/50 rounded-lg">
                 <p className="text-white font-medium mb-3">{locale === 'ar' ? 'السمة' : 'Theme'}</p>
                 <div className="flex gap-3">
-                  {['light', 'dark', 'system'].map((theme) => (
+                  {['light', 'dark', 'system'].map((themeOption) => (
                     <button
-                      key={theme}
-                      onClick={() => setAppearanceSettings({ ...appearanceSettings, theme })}
+                      key={themeOption}
+                      onClick={() => setAppearanceSettings({ ...appearanceSettings, theme: themeOption })}
                       className={`px-4 py-2 rounded-lg transition-colors ${
-                        appearanceSettings.theme === theme
+                        appearanceSettings.theme === themeOption
                           ? 'bg-brand-red text-white'
                           : 'bg-gray-600 text-gray-300 hover:bg-gray-500'
                       }`}
                     >
-                      {theme === 'light' ? (locale === 'ar' ? 'فاتح' : 'Light') :
-                       theme === 'dark' ? (locale === 'ar' ? 'داكن' : 'Dark') :
+                      {themeOption === 'light' ? (locale === 'ar' ? 'فاتح' : 'Light') :
+                       themeOption === 'dark' ? (locale === 'ar' ? 'داكن' : 'Dark') :
                        (locale === 'ar' ? 'النظام' : 'System')}
                     </button>
                   ))}
@@ -435,7 +489,6 @@ export default function AdminSettingsPage({ params: { locale = 'en' } }) {
           </div>
         )}
 
-        {/* Security Tab */}
         {activeTab === 'security' && (
           <div className="space-y-6">
             <h3 className="text-lg font-semibold text-white mb-4">

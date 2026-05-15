@@ -6,7 +6,8 @@ const offerController = {
     try {
       const { 
         code, discount_type, discount_value, target_role,
-        valid_from, valid_until, usage_limit 
+        valid_from, valid_until, usage_limit, is_active,
+        min_order_amount, description
       } = req.body;
 
       if (!code || !discount_type || !discount_value || !valid_from || !valid_until) {
@@ -16,7 +17,6 @@ const offerController = {
         });
       }
 
-      // Validate discount type
       if (!['percentage', 'fixed'].includes(discount_type)) {
         return res.status(400).json({ 
           success: false, 
@@ -24,7 +24,6 @@ const offerController = {
         });
       }
 
-      // Validate discount value
       if (discount_type === 'percentage' && (discount_value < 1 || discount_value > 100)) {
         return res.status(400).json({ 
           success: false, 
@@ -40,6 +39,9 @@ const offerController = {
         valid_from,
         valid_until,
         usage_limit,
+        is_active: is_active !== false,
+        min_order_amount: min_order_amount || null,
+        description: description || null,
         created_by: req.user.id
       });
 

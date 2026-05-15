@@ -76,7 +76,12 @@ export default function OffersManagement({ params: { locale = 'en' } }) {
         discount_value: parseFloat(formData.discount_value),
         usage_limit: formData.usage_limit ? parseInt(formData.usage_limit) : null,
         min_order_amount: formData.min_order_amount ? parseFloat(formData.min_order_amount) : null,
+        valid_from: formData.starts_at,
+        valid_until: formData.expires_at,
       };
+      
+      delete data.starts_at;
+      delete data.expires_at;
       
       if (editingOffer) {
         await offersAPI.update(editingOffer.id, data);

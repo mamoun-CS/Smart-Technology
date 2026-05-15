@@ -1,6 +1,7 @@
 import '../globals.css';
 import { getDictionary } from '@/i18n';
 import { Toaster } from 'sonner';
+import ThemeInitializer from '@/components/ui/ThemeInitializer';
 
 export const metadata = {
   title: `${process.env.NEXT_PUBLIC_APP_NAME || 'Smart Technology'} - Premium E-Commerce`,
@@ -19,6 +20,7 @@ export default function RootLayout({ children, params: { locale = 'en' } }) {
   return (
     <html lang={locale} dir={direction} suppressHydrationWarning>
       <body className="min-h-screen bg-gray-50 dark:bg-gray-900" suppressHydrationWarning>
+        <ThemeInitializer />
         <Toaster 
           position={locale === 'ar' ? 'top-left' : 'top-right'}
           richColors

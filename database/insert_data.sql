@@ -7,7 +7,7 @@
 
 -- Insert default admin user (password: Admin123!)
 INSERT INTO users (name, email, password, role, approved, is_verified)
-VALUES ('Admin', 'admin@smarttech.com', '$2a$10$rQEY7xQvKQ8xQvKQ8xQvKQ8xQvKQ8xQvKQ8xQvKQ8xQvKQ8xQvKQ8x', 'admin', TRUE, TRUE)
+VALUES ('Admin', 'admin@smarttech.com', '$2b$10$ZhT3fsoJnttXkWVJC7KB3Otf5VhAlZt61e7pVJEHq9jzyt9r1A93C', 'admin', TRUE, TRUE)
 ON CONFLICT (email) DO NOTHING;
 
 -- ============================================
@@ -16,27 +16,27 @@ ON CONFLICT (email) DO NOTHING;
 
 -- Additional admin users
 INSERT INTO users (name, email, password, role, approved, is_verified, phone, last_login) VALUES
-('Super Admin', 'superadmin@smarttech.com', '$2a$10$rQEY7xQvKQ8xQvKQ8xQvKQ8xQvKQ8xQvKQ8xQvKQ8xQvKQ8xQvKQ8x', 'admin', TRUE, TRUE, '+970599000000', CURRENT_TIMESTAMP),
-('Tech Admin', 'techadmin@smarttech.com', '$2a$10$rQEY7xQvKQ8xQvKQ8xQvKQ8xQvKQ8xQvKQ8xQvKQ8xQvKQ8xQvKQ8x', 'admin', TRUE, TRUE, '+970599000001', CURRENT_TIMESTAMP);
+('Super Admin', 'superadmin@smarttech.com', '$2b$10$ZhT3fsoJnttXkWVJC7KB3Otf5VhAlZt61e7pVJEHq9jzyt9r1A93C', 'admin', TRUE, TRUE, '+970599000000', CURRENT_TIMESTAMP),
+('Tech Admin', 'techadmin@smarttech.com', '$2b$10$ZhT3fsoJnttXkWVJC7KB3Otf5VhAlZt61e7pVJEHq9jzyt9r1A93C', 'admin', TRUE, TRUE, '+970599000001', CURRENT_TIMESTAMP);
 
 -- Merchant users
 INSERT INTO users (name, email, password, role, approved, is_verified, phone, last_login, created_at) VALUES
-('Samsung Store', 'samsung@smarttech.com', '$2a$10$rQEY7xQvKQ8xQvKQ8xQvKQ8xQvKQ8xQvKQ8xQvKQ8xQvKQ8xQvKQ8x', 'merchant', TRUE, TRUE, '+970599111111', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-('Apple Center', 'apple@smarttech.com', '$2a$10$rQEY7xQvKQ8xQvKQ8xQvKQ8xQvKQ8xQvKQ8xQvKQ8xQvKQ8xQvKQ8x', 'merchant', TRUE, TRUE, '+970599111112', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-('Dell Store', 'dell@smarttech.com', '$2a$10$rQEY7xQvKQ8xQvKQ8xQvKQ8xQvKQ8xQvKQ8xQvKQ8xQvKQ8xQvKQ8x', 'merchant', FALSE, TRUE, '+970599111113', NULL, CURRENT_TIMESTAMP),
-('Xiaomi Official', 'xiaomi@smarttech.com', '$2a$10$rQEY7xQvKQ8xQvKQ8xQvKQ8xQvKQ8xQvKQ8xQvKQ8xQvKQ8xQvKQ8x', 'merchant', TRUE, TRUE, '+970599111114', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-('Lenovo Store', 'lenovo@smarttech.com', '$2a$10$rQEY7xQvKQ8xQvKQ8xQvKQ8xQvKQ8xQvKQ8xQvKQ8xQvKQ8xQvKQ8x', 'merchant', TRUE, TRUE, '+970599111115', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
+('Samsung Store', 'samsung@smarttech.com', '$2b$10$ZhT3fsoJnttXkWVJC7KB3Otf5VhAlZt61e7pVJEHq9jzyt9r1A93C', 'merchant', TRUE, TRUE, '+970599111111', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('Apple Center', 'apple@smarttech.com', '$2b$10$ZhT3fsoJnttXkWVJC7KB3Otf5VhAlZt61e7pVJEHq9jzyt9r1A93C', 'merchant', TRUE, TRUE, '+970599111112', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('Dell Store', 'dell@smarttech.com', '$2b$10$ZhT3fsoJnttXkWVJC7KB3Otf5VhAlZt61e7pVJEHq9jzyt9r1A93C', 'merchant', FALSE, TRUE, '+970599111113', NULL, CURRENT_TIMESTAMP),
+('Xiaomi Official', 'xiaomi@smarttech.com', '$2b$10$ZhT3fsoJnttXkWVJC7KB3Otf5VhAlZt61e7pVJEHq9jzyt9r1A93C', 'merchant', TRUE, TRUE, '+970599111114', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('Lenovo Store', 'lenovo@smarttech.com', '$2b$10$ZhT3fsoJnttXkWVJC7KB3Otf5VhAlZt61e7pVJEHq9jzyt9r1A93C', 'merchant', TRUE, TRUE, '+970599111115', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
 
 -- Customer users
 INSERT INTO users (name, email, password, role, approved, is_verified, phone, phone_verified, last_login, google_id, avatar) VALUES
-('Ahmed Mansour', 'ahmed@example.com', '$2a$10$rQEY7xQvKQ8xQvKQ8xQvKQ8xQvKQ8xQvKQ8xQvKQ8xQvKQ8xQvKQ8x', 'customer', TRUE, TRUE, '+970599222111', TRUE, CURRENT_TIMESTAMP, 'google_ahmed123', 'https://ui-avatars.com/api/?name=Ahmed+Mansour'),
-('Layla Hassan', 'layla@example.com', '$2a$10$rQEY7xQvKQ8xQvKQ8xQvKQ8xQvKQ8xQvKQ8xQvKQ8xQvKQ8xQvKQ8x', 'customer', TRUE, TRUE, '+970599222112', TRUE, CURRENT_TIMESTAMP, NULL, 'https://ui-avatars.com/api/?name=Layla+Hassan'),
-('Omar Khalil', 'omar@example.com', '$2a$10$rQEY7xQvKQ8xQvKQ8xQvKQ8xQvKQ8xQvKQ8xQvKQ8xQvKQ8xQvKQ8x', 'customer', TRUE, TRUE, '+970599222113', FALSE, CURRENT_TIMESTAMP, NULL, 'https://ui-avatars.com/api/?name=Omar+Khalil'),
-('Sara Nasser', 'sara@example.com', '$2a$10$rQEY7xQvKQ8xQvKQ8xQvKQ8xQvKQ8xQvKQ8xQvKQ8xQvKQ8xQvKQ8x', 'customer', TRUE, TRUE, '+970599222114', TRUE, CURRENT_TIMESTAMP, NULL, 'https://ui-avatars.com/api/?name=Sara+Nasser'),
-('Mohammed Abu Ali', 'mohammed@example.com', '$2a$10$rQEY7xQvKQ8xQvKQ8xQvKQ8xQvKQ8xQvKQ8xQvKQ8xQvKQ8xQvKQ8x', 'customer', TRUE, FALSE, '+970599222115', FALSE, NULL, NULL, 'https://ui-avatars.com/api/?name=Mohammed+Ali'),
-('Nadia Khalil', 'nadia@example.com', '$2a$10$rQEY7xQvKQ8xQvKQ8xQvKQ8xQvKQ8xQvKQ8xQvKQ8xQvKQ8xQvKQ8x', 'customer', TRUE, TRUE, '+970599222116', TRUE, CURRENT_TIMESTAMP, NULL, 'https://ui-avatars.com/api/?name=Nadia+Khalil'),
-('Youssef Ramadan', 'youssef@example.com', '$2a$10$rQEY7xQvKQ8xQvKQ8xQvKQ8xQvKQ8xQvKQ8xQvKQ8xQvKQ8xQvKQ8x', 'customer', TRUE, TRUE, '+970599222117', TRUE, CURRENT_TIMESTAMP, NULL, 'https://ui-avatars.com/api/?name=Youssef+Ramadan'),
-('Dina Hassan', 'dina@example.com', '$2a$10$rQEY7xQvKQ8xQvKQ8xQvKQ8xQvKQ8xQvKQ8xQvKQ8xQvKQ8xQvKQ8x', 'customer', FALSE, TRUE, '+970599222118', FALSE, NULL, NULL, 'https://ui-avatars.com/api/?name=Dina+Hassan');
+('Ahmed Mansour', 'ahmed@example.com', '$2b$10$ZhT3fsoJnttXkWVJC7KB3Otf5VhAlZt61e7pVJEHq9jzyt9r1A93C', 'customer', TRUE, TRUE, '+970599222111', TRUE, CURRENT_TIMESTAMP, 'google_ahmed123', 'https://ui-avatars.com/api/?name=Ahmed+Mansour'),
+('Layla Hassan', 'layla@example.com', '$2b$10$ZhT3fsoJnttXkWVJC7KB3Otf5VhAlZt61e7pVJEHq9jzyt9r1A93C', 'customer', TRUE, TRUE, '+970599222112', TRUE, CURRENT_TIMESTAMP, NULL, 'https://ui-avatars.com/api/?name=Layla+Hassan'),
+('Omar Khalil', 'omar@example.com', '$2b$10$ZhT3fsoJnttXkWVJC7KB3Otf5VhAlZt61e7pVJEHq9jzyt9r1A93C', 'customer', TRUE, TRUE, '+970599222113', FALSE, CURRENT_TIMESTAMP, NULL, 'https://ui-avatars.com/api/?name=Omar+Khalil'),
+('Sara Nasser', 'sara@example.com', '$2b$10$ZhT3fsoJnttXkWVJC7KB3Otf5VhAlZt61e7pVJEHq9jzyt9r1A93C', 'customer', TRUE, TRUE, '+970599222114', TRUE, CURRENT_TIMESTAMP, NULL, 'https://ui-avatars.com/api/?name=Sara+Nasser'),
+('Mohammed Abu Ali', 'mohammed@example.com', '$2b$10$ZhT3fsoJnttXkWVJC7KB3Otf5VhAlZt61e7pVJEHq9jzyt9r1A93C', 'customer', TRUE, FALSE, '+970599222115', FALSE, NULL, NULL, 'https://ui-avatars.com/api/?name=Mohammed+Ali'),
+('Nadia Khalil', 'nadia@example.com', '$2b$10$ZhT3fsoJnttXkWVJC7KB3Otf5VhAlZt61e7pVJEHq9jzyt9r1A93C', 'customer', TRUE, TRUE, '+970599222116', TRUE, CURRENT_TIMESTAMP, NULL, 'https://ui-avatars.com/api/?name=Nadia+Khalil'),
+('Youssef Ramadan', 'youssef@example.com', '$2b$10$ZhT3fsoJnttXkWVJC7KB3Otf5VhAlZt61e7pVJEHq9jzyt9r1A93C', 'customer', TRUE, TRUE, '+970599222117', TRUE, CURRENT_TIMESTAMP, NULL, 'https://ui-avatars.com/api/?name=Youssef+Ramadan'),
+('Dina Hassan', 'dina@example.com', '$2b$10$ZhT3fsoJnttXkWVJC7KB3Otf5VhAlZt61e7pVJEHq9jzyt9r1A93C', 'customer', FALSE, TRUE, '+970599222118', FALSE, NULL, NULL, 'https://ui-avatars.com/api/?name=Dina+Hassan');
 
 -- ============================================
 -- 3. CATEGORIES

@@ -4,15 +4,15 @@ const bcrypt = require('bcrypt');
 const userModel = {
   // Create a new user
   async create(userData) {
-    const { name, email, password, role = 'customer' } = userData;
+    const { name, email, password, role = 'customer', phone, countryCode, phoneVerified } = userData;
     const hashedPassword = await bcrypt.hash(password, 10);
     
     const query = `
-      INSERT INTO users (name, email, password, role)
-      VALUES ($1, $2, $3, $4)
-      RETURNING id, name, email, role, approved, is_verified, created_at
+      INSERT INTO users (name, email, password, role, phone, country_code, phone_verified, is_verified)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      RETURNING id, name, email, role, approved, is_verified, phone, phone_verified, created_at
     `;
-    const values = [name, email, hashedPassword, role];
+    const values = [name, email, hashedPassword, role, phone || null, countryCode || '+970', phoneVerified || false, phoneVerified || false];
     
     const result = await pool.query(query, values);
     return result.rows[0];
@@ -22,6 +22,13 @@ const userModel = {
   async findByEmail(email) {
     const query = 'SELECT * FROM users WHERE email = $1';
     const result = await pool.query(query, [email]);
+    return result.rows[0];
+  },
+
+  // Find user by phone
+  async findByPhone(phone, countryCode = '+970') {
+    const query = 'SELECT * FROM users WHERE phone = $1 AND country_code = $2';
+    const result = await pool.query(query, [phone, countryCode]);
     return result.rows[0];
   },
 

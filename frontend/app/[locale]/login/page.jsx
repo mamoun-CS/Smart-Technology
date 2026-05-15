@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Mail, Lock, Eye, EyeOff } from '@/components/icons';
+import { Mail, Lock, Eye, EyeOff, Phone } from '@/components/icons';
 import { useAuthStore } from '@/store';
 import { getDictionary } from '@/i18n';
 import { cn } from '@/lib';
@@ -15,12 +15,14 @@ import { Button } from '@/components';
 import { Input } from '@/components';
 
 const loginSchema = z.object({
-  email: z.string().email('Invalid email address'),
+  login: z.string().min(1, 'Email or phone number is required'),
   password: z.string().min(1, 'Password is required'),
 });
 
 export default function LoginPage({ params: { locale = 'en' } }) {
   const [showPassword, setShowPassword] = useState(false);
+  const [loginType, setLoginType] = useState('email');
+  const [countryCode, setCountryCode] = useState('+970');
   const router = useRouter();
   const dict = getDictionary(locale);
   const t = dict?.auth || {};
@@ -32,10 +34,18 @@ export default function LoginPage({ params: { locale = 'en' } }) {
   const {
     register,
     handleSubmit,
+    watch,
+    setValue,
     formState: { errors },
   } = useForm({
     resolver: zodResolver(loginSchema),
+    defaultValues: {
+      login: '',
+      password: '',
+    },
   });
+
+  const loginValue = watch('login');
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -44,9 +54,21 @@ export default function LoginPage({ params: { locale = 'en' } }) {
     return () => clearError();
   }, [isAuthenticated, router, locale, clearError]);
 
+  useEffect(() => {
+    if (loginValue.length >= 9 && /^\d+$/.test(loginValue)) {
+      setLoginType('phone');
+    } else if (loginValue.includes('@')) {
+      setLoginType('email');
+    }
+  }, [loginValue]);
+
   const onSubmit = async (data) => {
+    const loginData = loginType === 'phone' 
+      ? { phone: data.login, countryCode, password: data.password }
+      : { email: data.login, password: data.password };
+    
     try {
-      await login(data);
+      await login(loginData);
       router.push(`/${locale}/profile`);
     } catch (err) {
       // Error is handled in store
@@ -59,7 +81,6 @@ export default function LoginPage({ params: { locale = 'en' } }) {
       
       <div className="pt-24 pb-12 flex items-center justify-center min-h-screen">
         <div className="w-full max-w-md px-4">
-          {/* Logo */}
           <div className="text-center mb-8">
             <img
               src="/images/logo.png"
@@ -79,14 +100,58 @@ export default function LoginPage({ params: { locale = 'en' } }) {
             )}
 
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-              <Input
-                label={t.email}
-                type="email"
-                placeholder="you@example.com"
-                icon={Mail}
-                error={errors.email?.message || errorsT.invalidEmail}
-                {...register('email')}
-              />
+              <div>
+                <label className="label text-gray-300">{t.emailOrPhone || 'Email or Phone'}</label>
+                {loginType === 'phone' ? (
+                  <div className="flex gap-2">
+                    <div className="relative w-28">
+                      <select
+                        value={countryCode}
+                        onChange={(e) => setCountryCode(e.target.value)}
+                        className="input pl-3 pr-8 bg-dark-700 border-dark-600 text-white appearance-none cursor-pointer"
+                      >
+                        <option value="+970">+970</option>
+                        <option value="+972">+972</option>
+                      </select>
+                      <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </div>
+                    </div>
+                    <div className="relative flex-1">
+                      <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">
+                        <Phone className="w-5 h-5" />
+                      </div>
+                      <input
+                        type="tel"
+                        {...register('login')}
+                        placeholder={t.phonePlaceholder || "59 ********"}
+                        className="input pl-10 bg-dark-700 border-dark-600 text-white"
+                        maxLength={9}
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  <div className="relative">
+                    <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">
+                      <Mail className="w-5 h-5" />
+                    </div>
+                    <input
+                      type="email"
+                      {...register('login')}
+                      placeholder={t.emailPlaceholder || "you@example.com"}
+                      className="input pl-10 bg-dark-700 border-dark-600 text-white"
+                    />
+                  </div>
+                )}
+                {errors.login && (
+                  <p className="text-red-500 text-sm mt-1.5">{errors.login.message}</p>
+                )}
+                <p className="text-gray-500 text-xs mt-1">
+                  {loginType === 'phone' ? 'Enter 9 digits starting with 59' : 'Enter email address'}
+                </p>
+              </div>
 
               <div>
                 <label className="label text-gray-300">{t.password}</label>
@@ -138,42 +203,6 @@ export default function LoginPage({ params: { locale = 'en' } }) {
                 {t.signIn}
               </Button>
             </form>
-
-            <div className="mt-6">
-              <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-dark-600" />
-                </div>
-                <div className="relative flex justify-center text-sm">
-                  <span className="px-4 bg-dark-800 text-gray-500">Or continue with</span>
-                </div>
-              </div>
-
-              <button
-                type="button"
-                className="mt-4 w-full py-3 px-4 bg-dark-700 border border-dark-600 rounded-lg text-gray-300 hover:bg-dark-600 transition-colors flex items-center justify-center gap-2"
-              >
-                <svg className="w-5 h-5" viewBox="0 0 24 24">
-                  <path
-                    fill="currentColor"
-                    d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                  />
-                  <path
-                    fill="currentColor"
-                    d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                  />
-                  <path
-                    fill="currentColor"
-                    d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
-                  />
-                  <path
-                    fill="currentColor"
-                    d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-                  />
-                </svg>
-                {t.googleLogin}
-              </button>
-            </div>
 
             <p className="mt-8 text-center text-gray-400">
               {t.hasAccount}{' '}

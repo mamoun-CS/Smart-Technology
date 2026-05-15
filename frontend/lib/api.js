@@ -241,7 +241,6 @@ export const adminAPI = {
   deleteUser: (id) => api.delete(`/admin/users/${id}`),
   getAllProducts: (params) => api.get('/admin/products', { params }),
   getAllAddresses: () => api.get('/admin/addresses'),
-  // Analytics
   getDashboardStats: () => api.get('/admin/analytics/dashboard'),
   getSalesByDate: (params) => api.get('/admin/analytics/sales', { params }),
   getRevenue: (params) => api.get('/admin/analytics/revenue', { params }),
@@ -253,4 +252,11 @@ export const adminAPI = {
   getMerchantActivity: (params) => api.get('/admin/analytics/merchants/activity', { params }),
   getOrderDistribution: () => api.get('/admin/analytics/orders/distribution'),
   getActiveOffers: () => api.get('/admin/offers/active'),
+};
+
+// OTP API (Phone verification via WhatsApp)
+export const otpAPI = {
+  sendOTP: (data) => api.post('/otp/send', data),
+  verifyOTP: (data) => api.post('/otp/verify', data),
+  resendOTP: (data) => api.post('/otp/resend', data),
 };

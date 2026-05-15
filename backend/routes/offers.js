@@ -3,7 +3,7 @@ const router = express.Router();
 const { body } = require('express-validator');
 const offerController = require('../controllers/offerController');
 const authMiddleware = require('../middleware/auth');
-const { requireAdmin } = require('../middleware/rbac');
+const { requireAdmin, requireAdminOrTrader, requireApprovedTrader } = require('../middleware/rbac');
 
 // Public route - get active offers (for logged in users)
 router.get('/active', authMiddleware, offerController.getActiveOffers);
@@ -15,7 +15,7 @@ router.post('/validate', authMiddleware, [
 ], offerController.validateOffer);
 
 // Admin routes
-router.post('/', authMiddleware, requireAdmin, [
+router.post('/', authMiddleware, requireAdminOrTrader, requireApprovedTrader, [
   body('code').trim().notEmpty().withMessage('Code is required'),
   body('discount_type').isIn(['percentage', 'fixed']).withMessage('Invalid discount type'),
   body('discount_value').isFloat({ min: 0 }).withMessage('Discount value is required'),
@@ -23,9 +23,9 @@ router.post('/', authMiddleware, requireAdmin, [
   body('valid_until').isISO8601().withMessage('Valid until date is required')
 ], offerController.createOffer);
 
-router.get('/', authMiddleware, requireAdmin, offerController.getAllOffers);
-router.put('/:offerId', authMiddleware, requireAdmin, offerController.updateOffer);
-router.delete('/:offerId', authMiddleware, requireAdmin, offerController.deleteOffer);
+router.get('/', authMiddleware, requireAdminOrTrader, offerController.getAllOffers);
+router.put('/:offerId', authMiddleware, requireAdminOrTrader, offerController.updateOffer);
+router.delete('/:offerId', authMiddleware, requireAdminOrTrader, offerController.deleteOffer);
 
 // Email campaign
 router.post('/send-email', authMiddleware, requireAdmin, offerController.sendOffersByEmail);

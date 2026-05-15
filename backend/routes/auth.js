@@ -7,13 +7,18 @@ const authMiddleware = require('../middleware/auth');
 // Validation rules
 const registerValidation = [
   body('name').trim().notEmpty().withMessage('Name is required'),
-  body('email').isEmail().withMessage('Please provide a valid email'),
-  body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters')
+  body('email').optional().isEmail().withMessage('Please provide a valid email'),
+  body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
+  body('phone').optional().isString(),
+  body('countryCode').optional().isString(),
+  body('phoneVerified').optional().isBoolean()
 ];
 
 const loginValidation = [
-  body('email').isEmail().withMessage('Please provide a valid email'),
-  body('password').notEmpty().withMessage('Password is required')
+  body('email').optional().isEmail().withMessage('Please provide a valid email'),
+  body('password').notEmpty().withMessage('Password is required'),
+  body('phone').optional().isString(),
+  body('countryCode').optional().isString()
 ];
 
 const passwordResetValidation = [

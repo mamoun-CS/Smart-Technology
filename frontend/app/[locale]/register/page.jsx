@@ -6,19 +6,24 @@ import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Mail, Lock, User, Eye, EyeOff, Store, ShoppingCart } from '@/components/icons';
+import { Mail, Lock, User, Eye, EyeOff, Store, ShoppingCart, Phone } from '@/components/icons';
 import { useAuthStore } from '@/store';
 import { getDictionary } from '@/i18n';
 import { cn } from '@/lib';
 import { Navbar } from '@/components';
 import { Button } from '@/components';
-import { Input } from '@/components';
+import { Input } from '@/components/ui/Input';
 
 const registerSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
-  email: z.string().email('Invalid email address'),
+  email: z.string().email('Invalid email address').optional().or(z.literal('')),
   password: z.string().min(6, 'Password must be at least 6 characters'),
   confirmPassword: z.string(),
+  phone: z.string().min(9, 'Phone must be 9 digits starting with 59').max(9, 'Phone must be 9 digits').refine(
+    (val) => val.startsWith('59'),
+    { message: 'Phone must start with 59' }
+  ),
+  countryCode: z.enum(['+970', '+972']).default('+970'),
   role: z.enum(['customer', 'trader']).default('customer'),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords don't match",
@@ -28,25 +33,32 @@ const registerSchema = z.object({
 export default function RegisterPage({ params: { locale = 'en' } }) {
   const [showPassword, setShowPassword] = useState(false);
   const [selectedRole, setSelectedRole] = useState('customer');
+  const [countryCode, setCountryCode] = useState('+970');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const router = useRouter();
   const dict = getDictionary(locale);
   const t = dict?.auth || {};
   const commonT = dict?.common || {};
   const errorsT = dict?.errors || {};
   
-  const { register: registerUser, isLoading, error, isAuthenticated, clearError } = useAuthStore();
+  const { isAuthenticated, clearError } = useAuthStore();
 
   const {
     register,
     handleSubmit,
     setValue,
+    watch,
     formState: { errors },
   } = useForm({
     resolver: zodResolver(registerSchema),
     defaultValues: {
       role: 'customer',
+      countryCode: '+970',
+      email: '',
     },
   });
+
+  const phoneValue = watch('phone');
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -55,18 +67,25 @@ export default function RegisterPage({ params: { locale = 'en' } }) {
     return () => clearError();
   }, [isAuthenticated, router, locale, clearError]);
 
+  useEffect(() => {
+    localStorage.removeItem('pendingRegistration');
+  }, []);
+
   const onSubmit = async (data) => {
-    try {
-      await registerUser({
-        name: data.name,
-        email: data.email,
-        password: data.password,
-        role: data.role,
-      });
-      router.push(`/${locale}/login?registered=true`);
-    } catch (err) {
-      // Error is handled in store
-    }
+    setIsSubmitting(true);
+    
+    const registrationData = {
+      name: data.name,
+      email: data.email || undefined,
+      password: data.password,
+      role: data.role,
+      phone: data.phone,
+      countryCode: data.countryCode,
+      phoneVerified: false,
+    };
+    
+    localStorage.setItem('pendingRegistration', JSON.stringify(registrationData));
+    router.push(`/${locale}/verify`);
   };
 
   return (
@@ -75,7 +94,6 @@ export default function RegisterPage({ params: { locale = 'en' } }) {
       
       <div className="pt-24 pb-12 flex items-center justify-center min-h-screen">
         <div className="w-full max-w-md px-4">
-          {/* Logo */}
           <div className="text-center mb-8">
             <img
               src="/images/logo.png"
@@ -88,12 +106,6 @@ export default function RegisterPage({ params: { locale = 'en' } }) {
           </div>
 
           <div className="card p-8 bg-dark-800 border-dark-600">
-            {error && (
-              <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 text-red-400 rounded-lg text-sm">
-                {error}
-              </div>
-            )}
-
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
               <Input
                 label={t.name}
@@ -107,11 +119,52 @@ export default function RegisterPage({ params: { locale = 'en' } }) {
               <Input
                 label={t.email}
                 type="email"
-                placeholder="you@example.com"
+                placeholder="you@example.com (optional)"
                 icon={Mail}
                 error={errors.email?.message || errorsT.invalidEmail}
                 {...register('email')}
               />
+
+              <div>
+                <label className="label text-gray-300">Phone Number (WhatsApp)</label>
+                <div className="flex gap-2">
+                  <div className="relative w-28">
+                    <select
+                      {...register('countryCode')}
+                      value={countryCode}
+                      onChange={(e) => {
+                        setCountryCode(e.target.value);
+                        setValue('countryCode', e.target.value);
+                      }}
+                      className="input pl-3 pr-8 bg-dark-700 border-dark-600 text-white appearance-none cursor-pointer"
+                    >
+                      <option value="+970">+970</option>
+                      <option value="+972">+972</option>
+                    </select>
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </div>
+                  </div>
+                  <div className="relative flex-1">
+                    <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">
+                      <Phone className="w-5 h-5" />
+                    </div>
+                    <input
+                      type="tel"
+                      {...register('phone')}
+                      placeholder="59 ********"
+                      className="input pl-10 bg-dark-700 border-dark-600 text-white"
+                      maxLength={9}
+                    />
+                  </div>
+                </div>
+                {errors.phone && (
+                  <p className="text-red-500 text-sm mt-1.5">{errors.phone.message}</p>
+                )}
+                <p className="text-gray-500 text-xs mt-1">Enter 9 digits starting with 59</p>
+              </div>
 
               <div>
                 <label className="label text-gray-300">{t.password}</label>
@@ -147,11 +200,9 @@ export default function RegisterPage({ params: { locale = 'en' } }) {
                 {...register('confirmPassword')}
               />
 
-              {/* Account Type Selection */}
               <div>
                 <label className="label text-gray-300">Account Type</label>
                 <div className="relative grid grid-cols-2 gap-3 p-1 bg-dark-700 rounded-xl">
-                  {/* Toggle indicator */}
                   <div className={cn(
                     "absolute top-1 bottom-1 w-[calc(50%-4px)] bg-brand-red rounded-lg transition-all duration-300 ease-in-out",
                     selectedRole === 'customer' ? 'left-1' : 'left-[calc(50%+2px)]'
@@ -217,7 +268,7 @@ export default function RegisterPage({ params: { locale = 'en' } }) {
               <Button 
                 type="submit" 
                 fullWidth 
-                isLoading={isLoading}
+                isLoading={isSubmitting}
                 className="mt-2"
               >
                 {t.signUp}

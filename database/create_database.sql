@@ -154,11 +154,14 @@ CREATE TABLE offers (
     code VARCHAR(50) UNIQUE NOT NULL,
     discount_type VARCHAR(20) NOT NULL CHECK (discount_type IN ('percentage', 'fixed')),
     discount_value DECIMAL(10, 2) NOT NULL,
-    target_role VARCHAR(20) DEFAULT 'all' CHECK (target_role IN ('customer', 'merchant', 'all')),
+    target_role VARCHAR(20) DEFAULT 'all' CHECK (target_role IN ('customer', 'merchant', 'trader', 'all')),
     valid_from TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     valid_until TIMESTAMP NOT NULL,
     usage_limit INTEGER,
     used_count INTEGER DEFAULT 0,
+    is_active BOOLEAN DEFAULT TRUE,
+    min_order_amount DECIMAL(10, 2),
+    description TEXT,
     created_by UUID REFERENCES users(id) ON DELETE SET NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

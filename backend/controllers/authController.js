@@ -16,32 +16,41 @@ const authController = {
         });
       }
 
-      const { name, email, password, role = 'customer' } = req.body;
+      const { name, email, password, role = 'customer', phone, countryCode, phoneVerified } = req.body;
 
-      // Check if user already exists
-      const existingUser = await userModel.findByEmail(email);
-      if (existingUser) {
+      if (email) {
+        const existingUser = await userModel.findByEmail(email);
+        if (existingUser) {
+          return res.status(400).json({ 
+            success: false, 
+            message: 'Email already registered.' 
+          });
+        }
+      }
+
+      if (!phoneVerified && phone) {
         return res.status(400).json({ 
           success: false, 
-          message: 'Email already registered.' 
+          message: 'Phone number must be verified before registration.' 
         });
       }
 
-      // Create user
-      const user = await userModel.create({ name, email, password, role });
+      const user = await userModel.create({ name, email, password, role, phone, countryCode, phoneVerified });
 
-      // Send verification email (optional - won't fail registration if email fails)
-      try {
-        const tokenData = await tokenModel.createEmailToken(user.id, 'verification');
-        await emailService.sendVerificationEmail(user.email, user.name, tokenData.token);
-      } catch (emailError) {
-        console.error('Email sending failed during registration:', emailError.message);
-        console.error('Email error stack:', emailError.stack);
+      if (email) {
+        try {
+          const tokenData = await tokenModel.createEmailToken(user.id, 'verification');
+          await emailService.sendVerificationEmail(user.email, user.name, tokenData.token);
+        } catch (emailError) {
+          console.error('Email sending failed during registration:', emailError.message);
+        }
       }
 
       res.status(201).json({
         success: true,
-        message: 'Registration successful. Please check your email to verify your account.',
+        message: phoneVerified 
+          ? 'Registration successful. Your phone has been verified.'
+          : 'Registration successful.',
         user: {
           id: user.id,
           name: user.name,
@@ -69,14 +78,20 @@ const authController = {
         });
       }
 
-      const { email, password } = req.body;
+      const { email, phone, countryCode, password } = req.body;
+      let user = null;
 
-      // Find user
-      const user = await userModel.findByEmail(email);
+      // Find user by email or phone
+      if (email) {
+        user = await userModel.findByEmail(email);
+      } else if (phone && countryCode) {
+        user = await userModel.findByPhone(phone, countryCode);
+      }
+
       if (!user) {
         return res.status(401).json({ 
           success: false, 
-          message: 'Invalid email or password.' 
+          message: 'Invalid email/phone or password.' 
         });
       }
 
@@ -93,7 +108,7 @@ const authController = {
       if (!isMatch) {
         return res.status(401).json({ 
           success: false, 
-          message: 'Invalid email or password.' 
+          message: 'Invalid email/phone or password.' 
         });
       }
 
@@ -101,7 +116,7 @@ const authController = {
       if (!user.is_verified) {
         return res.status(403).json({ 
           success: false, 
-          message: 'Please verify your email before logging in.' 
+          message: 'Please verify your account before logging in.' 
         });
       }
 
