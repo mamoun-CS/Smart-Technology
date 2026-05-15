@@ -103,37 +103,35 @@ const orderModel = {
         orderStatus = 'under_review';
       }
       
-      // Create order - include full_name and phone
-      const orderQuery = `
-        INSERT INTO orders (
-          user_id, 
-          full_name,
-          phone,
-          total_price, 
-          status, 
-          shipping_address, 
-          payment_method,
-          city,
-          delivery_method,
-          shipping_cost,
-          is_large_order
-        )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-        RETURNING *
-      `;
-      const orderResult = await client.query(orderQuery, [
-        userId, 
-        full_name,
-        phone,
-        totalPrice, 
-        orderStatus, 
-        shipping_address, 
-        payment_method,
-        city || null,
-        delivery_method || null,
-        shippingCost,
-        isLargeOrder
-      ]);
+       // Create order - include full_name and phone
+       const orderQuery = `
+         INSERT INTO orders (
+           user_id, 
+           full_name,
+           phone,
+           total_price, 
+           status, 
+           shipping_address, 
+           payment_method,
+           city,
+           delivery_method,
+           shipping_cost
+         )
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+         RETURNING *
+       `;
+       const orderResult = await client.query(orderQuery, [
+         userId, 
+         full_name,
+         phone,
+         totalPrice, 
+         orderStatus, 
+         shipping_address, 
+         payment_method,
+         city || null,
+         delivery_method || null,
+         shippingCost
+       ]);
       const order = orderResult.rows[0];
       
       // Create order items
@@ -238,26 +236,26 @@ const orderModel = {
     const offset = (page - 1) * limit;
     
     let query = `
-      SELECT o.id, o.user_id, o.total_price, o.status, o.shipping_address, o.payment_method, 
-             sa.city, o.delivery_method, o.shipping_cost, o.is_large_order,
-             o.created_at, o.updated_at,
-             CAST(o.total_price AS VARCHAR) as total_amount, 
-             u.name as customer_name, u.email as customer_email, u.phone as customer_phone,
-             json_agg(json_build_object(
-               'id', oi.id,
-               'product_id', oi.product_id,
-               'quantity', oi.quantity,
-               'price', oi.price,
-               'name_en', p.name_en,
-               'name_ar', p.name_ar,
-               'images', p.images
-             )) as items
-      FROM orders o
-      LEFT JOIN users u ON o.user_id = u.id
-      LEFT JOIN order_items oi ON o.id = oi.order_id
-      LEFT JOIN products p ON oi.product_id = p.id
-      LEFT JOIN shipping_addresses sa ON o.user_id = sa.user_id AND sa.is_default = true
-    `;
+       SELECT o.id, o.user_id, o.total_price, o.status, o.shipping_address, o.payment_method, 
+              sa.city, o.delivery_method, o.shipping_cost,
+              o.created_at, o.updated_at,
+              CAST(o.total_price AS VARCHAR) as total_amount, 
+              u.name as customer_name, u.email as customer_email, u.phone as customer_phone,
+              json_agg(json_build_object(
+                'id', oi.id,
+                'product_id', oi.product_id,
+                'quantity', oi.quantity,
+                'price', oi.price,
+                'name_en', p.name_en,
+                'name_ar', p.name_ar,
+                'images', p.images
+              )) as items
+       FROM orders o
+       LEFT JOIN users u ON o.user_id = u.id
+       LEFT JOIN order_items oi ON o.id = oi.order_id
+       LEFT JOIN products p ON oi.product_id = p.id
+       LEFT JOIN shipping_addresses sa ON o.user_id = sa.user_id AND sa.is_default = true
+     `;
     const values = [];
     
     if (status) {

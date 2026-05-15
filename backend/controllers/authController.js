@@ -1,7 +1,7 @@
 const userModel = require('../models/userModel');
 const tokenModel = require('../models/tokenModel');
 const jwtUtils = require('../utils/jwt');
-const emailService = require('../services/emailService');
+const emailService = require('../services/smtpEmailService');
 const { validationResult } = require('express-validator');
 
 const authController = {
