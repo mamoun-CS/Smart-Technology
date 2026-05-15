@@ -23,6 +23,7 @@ const ticketRoutes = require('./routes/tickets');
 const favoriteRoutes = require('./routes/favorites');
 const uploadRoutes = require('./routes/upload');
 const otpRoutes = require('./routes/otp');
+const contactRoutes = require('./routes/contact');
 require('dotenv').config();
 
 const app = express();
@@ -113,6 +114,7 @@ app.use('/api/shipping', shippingRoutes);
 app.use('/api/tickets', ticketRoutes);
 app.use('/api/favorites', favoriteRoutes);
 app.use('/api/upload', uploadRoutes);
+app.use('/api/send-email', contactRoutes);
 app.use('/api/otp', otpRoutes);
 
 // Google OAuth routes

@@ -119,7 +119,7 @@ INSERT INTO shipping_areas (name_en, name_ar, price, estimated_days, active) VAL
 -- ============================================
 
 INSERT INTO system_config (config_key, config_value, description) 
-VALUES ('large_order_threshold', '50', 'Minimum total quantity for large orders requiring manual review')
+VALUES ('large_order_threshold', '10', 'Minimum total quantity for large orders requiring manual review')
 ON CONFLICT (config_key) DO NOTHING;
 
 -- ============================================

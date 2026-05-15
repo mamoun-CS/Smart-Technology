@@ -69,22 +69,60 @@ CREATE TABLE product_pricing (
     UNIQUE(product_id, min_quantity)
 );
 
+-- ========================================
+-- SHIPPING TABLES  (must come before orders)
+-- ========================================
+
+-- Shipping areas - Shipping zones and costs
+CREATE TABLE shipping_areas (
+    id            UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    name_en        VARCHAR(255) NOT NULL,
+    name_ar        VARCHAR(255) NOT NULL,
+    price          DECIMAL(10, 2) NOT NULL DEFAULT 0,
+    estimated_days INTEGER,
+    active         BOOLEAN DEFAULT TRUE,
+    created_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Shipping addresses - User saved addresses
+CREATE TABLE shipping_addresses (
+    id         UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id    UUID REFERENCES users(id) ON DELETE CASCADE,
+    address    TEXT NOT NULL,
+    city       VARCHAR(100) NOT NULL,
+    phone      VARCHAR(50),
+    is_default BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- ========================================
+-- CORE ORDER TABLES
+-- ========================================
 -- Orders table
+-- full_name, phone, and shipping_address are denormalised snapshots captured at
+-- order time so the record is always self-contained and correct even if the
+-- user later edits their profile or deletes the saved address.
+-- shipping_address_id links back to shipping_addresses, enabling both
+-- historical accuracy (snapshot columns) and relational lookup (FK).
+-- is_large_order was removed; derive it at query time so the flag can never
+-- drift from the actual threshold stored in system_config.key = 'large_order_threshold'.
 CREATE TABLE orders (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    user_id UUID REFERENCES users(id) ON DELETE SET NULL,
-    full_name VARCHAR(255) NOT NULL DEFAULT '',
-    phone VARCHAR(50) NOT NULL DEFAULT '',
-    total_price DECIMAL(10, 2) NOT NULL,
-    status VARCHAR(50) DEFAULT 'pending',
-    shipping_address TEXT,
-    payment_method VARCHAR(50),
-    city VARCHAR(100),
-    delivery_method VARCHAR(20) CHECK (delivery_method IN ('shipping', 'pickup')),
-    shipping_cost DECIMAL(10, 2) DEFAULT 0,
-    is_large_order BOOLEAN DEFAULT FALSE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    id                  UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id             UUID                              REFERENCES users(id)            ON DELETE SET NULL,
+    shipping_address_id UUID                              REFERENCES shipping_addresses(id) ON DELETE SET NULL,
+    full_name           VARCHAR(255) NOT NULL DEFAULT '',
+    phone               VARCHAR(50)  NOT NULL DEFAULT '',
+    total_price         DECIMAL(10, 2) NOT NULL,
+    status              VARCHAR(50)  DEFAULT 'pending',
+    shipping_address    TEXT,
+    payment_method      VARCHAR(50),
+    city                VARCHAR(100),
+    delivery_method     VARCHAR(20) CHECK (delivery_method IN ('shipping', 'pickup')),
+    shipping_cost       DECIMAL(10, 2) DEFAULT 0,
+    shipping_area_id    UUID REFERENCES shipping_areas(id) ON DELETE SET NULL,
+    tracking_number     VARCHAR(255),
+    created_at          TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at          TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Order items table
@@ -166,17 +204,6 @@ CREATE TABLE offers (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Shipping areas - Shipping zones and costs
-CREATE TABLE shipping_areas (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    name_en VARCHAR(255) NOT NULL,
-    name_ar VARCHAR(255) NOT NULL,
-    price DECIMAL(10, 2) NOT NULL DEFAULT 0,
-    estimated_days INTEGER,
-    active BOOLEAN DEFAULT TRUE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
 -- Notifications - In-app notifications
 CREATE TABLE notifications (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -219,17 +246,6 @@ CREATE TABLE ticket_messages (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Shipping addresses - User saved addresses
-CREATE TABLE shipping_addresses (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
-    address TEXT NOT NULL,
-    city VARCHAR(100) NOT NULL,
-    phone VARCHAR(50),
-    is_default BOOLEAN DEFAULT FALSE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
 -- Product analytics - Track product views
 CREATE TABLE product_analytics (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -259,6 +275,17 @@ CREATE TABLE system_config (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Recommended system_config seed rows (INSERT after table creation)
+-- ─────────────────────────────────────────────────────────────────────────
+-- config_key              | config_value | description
+-- ─────────────────────────────────────────────────────────────────────────
+-- large_order_threshold   | 10           | orders.sum(quantity) >= this → large order
+-- default_shipping_cost   | 0            | fallback shipping cost when area price is NULL
+-- support_email           | support@…    | email shown in footer and auto-reply templates
+-- site_name               | Smart Technology | brand name used in email subjects and pages
+-- currency                | ILS          | ISO 4217 currency code used in all pricing output
+-- low_stock_threshold     | 10           | trigger low-stock alert when stock <= this value
+
 -- ============================================
 -- INDEXES
 -- ============================================
@@ -272,11 +299,13 @@ CREATE INDEX idx_products_category ON products(category_id);
 CREATE INDEX idx_products_created_by ON products(created_by);
 
 -- Orders indexes
-CREATE INDEX idx_orders_user ON orders(user_id);
-CREATE INDEX idx_orders_status ON orders(status);
-CREATE INDEX idx_orders_city ON orders(city);
-CREATE INDEX idx_orders_delivery_method ON orders(delivery_method);
-CREATE INDEX idx_orders_is_large_order ON orders(is_large_order);
+CREATE INDEX idx_orders_user             ON orders(user_id);
+CREATE INDEX idx_orders_status           ON orders(status);
+CREATE INDEX idx_orders_city             ON orders(city);
+CREATE INDEX idx_orders_delivery_method  ON orders(delivery_method);
+CREATE INDEX idx_orders_shipping_area    ON orders(shipping_area_id);
+CREATE INDEX idx_orders_tracking_number  ON orders(tracking_number);
+CREATE INDEX idx_orders_created_at       ON orders(created_at);
 
 -- Order items indexes
 CREATE INDEX idx_order_items_order ON order_items(order_id);
@@ -326,7 +355,13 @@ CREATE INDEX idx_favorites_product ON favorites(product_id);
 -- COMMENTS
 -- ============================================
 
-COMMENT ON COLUMN orders.city IS 'City selected by the user for delivery or pickup';
-COMMENT ON COLUMN orders.delivery_method IS 'Delivery method: shipping or in-store pickup';
-COMMENT ON COLUMN orders.shipping_cost IS 'Calculated shipping cost based on city and delivery method';
-COMMENT ON COLUMN orders.is_large_order IS 'Flag indicating if order exceeds large order threshold';
+COMMENT ON COLUMN orders.full_name           IS 'Denormalised snapshot captured at order time';
+COMMENT ON COLUMN orders.phone               IS 'Denormalised snapshot captured at order time';
+COMMENT ON COLUMN orders.shipping_address    IS 'Denormalised snapshot; authoritative copy lives in shipping_addresses';
+COMMENT ON COLUMN orders.city                IS 'City selected by the user for delivery or pickup';
+COMMENT ON COLUMN orders.delivery_method     IS 'Delivery method: shipping or in-store pickup';
+COMMENT ON COLUMN orders.shipping_cost       IS 'Calculated shipping cost based on shipping_area and delivery method';
+COMMENT ON COLUMN orders.shipping_area_id    IS 'FK to shipping_areas; authoritative source for destination-based pricing';
+COMMENT ON COLUMN orders.tracking_number     IS 'Carrier tracking number assigned when the order is shipped';
+COMMENT ON COLUMN system_config.config_key   IS 'Lowercase, snake_case key used for programmatic lookups';
+COMMENT ON COLUMN system_config.config_value IS 'String value; parse to the expected type when reading (boolean/integer/decimal/string)';
