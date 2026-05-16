@@ -24,7 +24,7 @@ const favoriteRoutes = require('./routes/favorites');
 const uploadRoutes = require('./routes/upload');
 const otpRoutes = require('./routes/otp');
 const contactRoutes = require('./routes/contact');
-require('dotenv').config();
+require('dotenv').config({ path: 'C:\\Users\\mamou\\Desktop\\Pre code\\Smart technology\\backend\\.env' });
 
 const app = express();
 
@@ -38,19 +38,36 @@ app.use(helmet({
 }));
 
 // CORS configuration
-const allowedOrigins = process.env.FRONTEND_URL
-  ? process.env.FRONTEND_URL.split(',').map(origin => origin.trim())
-  : ['http://localhost:3000'];
+const allowedOrigins = (() => {
+  const origins = [
+    'http://localhost:3000',
+    'https://af7d-188-161-1-60.ngrok-free.app',
+    'http://localhost:5000',
+  ];
+  if (process.env.FRONTEND_URL) {
+    process.env.FRONTEND_URL.split(',').forEach((entry) => {
+      origins.push(entry.trim());
+    });
+  }
+  return origins;
+})();
 
 app.use(cors({
   origin: function (origin, callback) {
-    // Allow requests with no origin (like mobile apps, curl, etc.)
+    // Allow requests with no origin (like file://, curl, etc.)
     if (!origin) return callback(null, true);
-    
-    if (allowedOrigins.indexOf(origin) !== -1) {
+
+    // Normalise: lowercase + strip trailing slash for tolerant comparison
+    const normalise = (o) => o.toLowerCase().replace(/\/+$/, '');
+
+    const isAllowed = allowedOrigins.some((entry) =>
+      normalise(entry) === normalise(origin)
+    );
+
+    if (isAllowed) {
       callback(null, true);
     } else {
-      callback(new Error('Not allowed by CORS'));
+      callback(new Error(`Not allowed by CORS: ${origin}`));
     }
   },
   credentials: true,
@@ -126,7 +143,7 @@ app.get('/api/auth/google/callback',
 );
 
 // Serve static files from image directory
-app.use('/image', express.static(path.join(__dirname, 'image')));
+app.use('/image', express.static('C:\\Users\\mamou\\Desktop\\Pre code\\Smart technology\\backend\\image'));
 
 // 404 handler
 app.use((req, res) => {
