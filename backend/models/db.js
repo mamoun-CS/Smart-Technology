@@ -7,6 +7,7 @@ const pool = new Pool({
   database: process.env.DB_NAME || 'smart_technology',
   user: process.env.DB_USER || 'postgres',
   password: process.env.DB_PASSWORD || 'postgres',
+  ssl: { rejectUnauthorized: false },
   max: 20,
   idleTimeoutMillis: 30000,
   connectionTimeoutMillis: 10000,
